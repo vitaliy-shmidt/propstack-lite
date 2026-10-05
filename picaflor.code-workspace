@@ -1,0 +1,16 @@
+{
+    "folders": [
+        {
+            "name": "Picaflor-Project",
+            "path": "."
+        },
+		{
+            "name": "Picaflor WP-Plugin",
+            "path": "wp-plugin"
+        },
+		{
+            "name": "Picaflor Dokumentation",
+            "path": "docs"
+        }
+    ],
+}
