@@ -4,3 +4,6 @@
 </FilesMatch>
 
 RedirectMatch 404 ^/Picaflor/(\.git|docs|tools)(/.*)?$
+# Entwicklungsartefakte des Plugins (Composer-Dev-Abhängigkeiten, Tests) nie ausliefern.
+RedirectMatch 404 ^/Picaflor/propstack-lite/(vendor|tests|\.phpunit\.cache)(/.*)?$
+RedirectMatch 404 ^/Picaflor/propstack-lite/(composer\.(json|lock)|phpunit\.xml\.dist)$

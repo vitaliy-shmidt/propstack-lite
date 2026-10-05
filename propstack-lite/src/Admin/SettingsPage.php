@@ -1,0 +1,249 @@
+<?php
+
+namespace PropstackLite\Admin;
+
+use PropstackLite\Api\ApiException;
+use PropstackLite\Plugin;
+use PropstackLite\Settings;
+use PropstackLite\Storage\PropertyStore;
+use PropstackLite\Sync\SyncLock;
+use PropstackLite\Sync\SyncState;
+
+/**
+ * Einstellungsseite unter „Einstellungen → Propstack Lite“ (nur manage_options).
+ *
+ * Status-Auswahl wird aus `GET /v1/property_statuses` geladen (1 h gecacht); dieser Request
+ * findet nur im Admin statt. Aktionen laufen über admin-post.php mit Nonce + Capability-Check.
+ */
+final class SettingsPage {
+
+	public const SLUG            = 'propstack-lite';
+	public const GROUP           = 'propstack_lite';
+	public const STATUS_CACHE    = 'psl_property_statuses';
+	public const ACTION_SYNC     = 'psl_sync_now';
+	public const ACTION_STATUSES = 'psl_reload_statuses';
+
+	public function __construct( private Settings $settings, private Plugin $plugin ) {}
+
+	public function register(): void {
+		add_action( 'admin_menu', [ $this, 'addPage' ] );
+		add_action( 'admin_init', [ $this, 'registerSetting' ] );
+		add_action( 'admin_post_' . self::ACTION_SYNC, [ $this, 'handleSyncNow' ] );
+		add_action( 'admin_post_' . self::ACTION_STATUSES, [ $this, 'handleReloadStatuses' ] );
+	}
+
+	public function addPage(): void {
+		add_options_page( 'Propstack Lite', 'Propstack Lite', 'manage_options', self::SLUG, [ $this, 'render' ] );
+	}
+
+	public function registerSetting(): void {
+		register_setting(
+			self::GROUP,
+			Settings::OPTION,
+			[
+				'type'              => 'array',
+				'sanitize_callback' => [ $this->settings, 'sanitize' ],
+				'show_in_rest'      => false,
+			]
+		);
+	}
+
+	public static function url( array $args = [] ): string {
+		return add_query_arg( array_merge( [ 'page' => self::SLUG ], $args ), admin_url( 'options-general.php' ) );
+	}
+
+	public function handleSyncNow(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Keine Berechtigung.', 403 );
+		}
+		check_admin_referer( self::ACTION_SYNC );
+
+		$result = $this->plugin->syncService()->runFull();
+		set_transient( 'psl_admin_sync_result_' . get_current_user_id(), $result->summary(), 60 );
+		wp_safe_redirect( self::url( [ 'psl_synced' => $result->isOk() ? '1' : '0' ] ) );
+		exit;
+	}
+
+	public function handleReloadStatuses(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Keine Berechtigung.', 403 );
+		}
+		check_admin_referer( self::ACTION_STATUSES );
+		delete_transient( self::STATUS_CACHE );
+		wp_safe_redirect( self::url() );
+		exit;
+	}
+
+	/** @return array{statuses: list<array{id:int,name:string}>, error: ?string} */
+	private function loadStatuses(): array {
+		$cached = get_transient( self::STATUS_CACHE );
+		if ( is_array( $cached ) ) {
+			return [ 'statuses' => $cached, 'error' => null ];
+		}
+		if ( ! $this->settings->hasApiKey() ) {
+			return [ 'statuses' => [], 'error' => 'Bitte zuerst einen API-Key hinterlegen.' ];
+		}
+		try {
+			$statuses = $this->plugin->unitsEndpoint()->statuses();
+			set_transient( self::STATUS_CACHE, $statuses, HOUR_IN_SECONDS );
+			return [ 'statuses' => $statuses, 'error' => null ];
+		} catch ( ApiException $e ) {
+			return [ 'statuses' => [], 'error' => $e->getMessage() ];
+		}
+	}
+
+	public function render(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		$o        = $this->settings->all();
+		$loaded   = $this->loadStatuses();
+		$statuses = $loaded['statuses'];
+		$name     = Settings::OPTION;
+		?>
+		<div class="wrap">
+			<h1>Propstack Listings Lite</h1>
+			<?php $this->renderSyncResultNotice(); ?>
+
+			<form method="post" action="options.php">
+				<?php settings_fields( self::GROUP ); ?>
+
+				<h2>Propstack-API</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="psl-api-key">API-Key</label></th>
+						<td>
+							<?php if ( Settings::apiKeyFromConstant() ) : ?>
+								<p><strong>Über die Konstante <code>PSL_API_KEY</code> in wp-config.php gesetzt.</strong> Das Feld ist deaktiviert.</p>
+							<?php else : ?>
+								<input type="password" id="psl-api-key" name="<?php echo esc_attr( $name ); ?>[api_key]" value="" class="regular-text" autocomplete="new-password"
+									placeholder="<?php echo esc_attr( '' !== $o['api_key'] ? '•••••••• (gespeichert – leer lassen zum Beibehalten)' : '' ); ?>">
+								<?php if ( '' !== $o['api_key'] ) : ?>
+									<label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[api_key_clear]" value="1"> Gespeicherten Key entfernen</label>
+								<?php endif; ?>
+								<p class="description">Empfohlen: Key als <code>define( 'PSL_API_KEY', '…' );</code> in wp-config.php statt in der Datenbank. Der Key wird nur serverseitig verwendet.</p>
+							<?php endif; ?>
+						</td>
+					</tr>
+				</table>
+
+				<h2>Sichtbarkeit</h2>
+				<?php if ( null !== $loaded['error'] ) : ?>
+					<div class="notice notice-warning inline"><p>Propstack-Status konnten nicht geladen werden: <?php echo esc_html( $loaded['error'] ); ?></p></div>
+				<?php endif; ?>
+				<table class="form-table" role="presentation">
+					<?php
+					$this->renderStatusField( 'public_status_ids', 'Öffentliche Propstack-Status', 'Nur Objekte mit diesen Status erscheinen auf der Website. Ohne Auswahl ist nichts öffentlich.', $statuses, $o['public_status_ids'] );
+					$this->renderStatusField( 'sold_status_ids', 'Status „verkauft/vermietet“', 'Zuvor öffentliche Objekte mit diesem Status bleiben 30 Tage mit Hinweis erreichbar (ab Phase 2), danach HTTP 410.', $statuses, $o['sold_status_ids'] );
+					$this->renderStatusField( 'reserved_status_ids', 'Status mit Badge „Reserviert“', 'Muss zusätzlich als öffentlich ausgewählt sein.', $statuses, $o['reserved_status_ids'] );
+					?>
+				</table>
+
+				<h2>Synchronisation</h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="psl-interval">Sync-Intervall (Minuten)</label></th>
+						<td>
+							<input type="number" id="psl-interval" min="<?php echo esc_attr( (string) Settings::MIN_INTERVAL ); ?>" max="<?php echo esc_attr( (string) Settings::MAX_INTERVAL ); ?>"
+								name="<?php echo esc_attr( $name ); ?>[sync_interval]" value="<?php echo esc_attr( (string) $this->settings->syncInterval() ); ?>">
+							<p class="description">Inkrementeller Abgleich. Zusätzlich läuft alle 6 Stunden ein Voll-Sync.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="psl-webhook-token">Webhook-Token</label></th>
+						<td>
+							<input type="text" id="psl-webhook-token" name="<?php echo esc_attr( $name ); ?>[webhook_token]" value="<?php echo esc_attr( $o['webhook_token'] ); ?>" class="regular-text code" autocomplete="off">
+							<p class="description">Nur A–Z, 0–9, „-“, „_“. Webhook (POST): <code><?php echo esc_html( rest_url( 'propstack/v1/webhook' ) ); ?></code> mit Header <code>X-PSL-Token</code>. Leer = Webhook deaktiviert.</p>
+						</td>
+					</tr>
+				</table>
+
+				<?php submit_button(); ?>
+			</form>
+
+			<?php $this->renderSyncBox(); ?>
+
+			<h2>Shortcode</h2>
+			<p><code>[propstack_list per="12" marketing_type="BUY" rs_type="APARTMENT" sort_by="price" order="asc"]</code></p>
+			<p class="description">Attribute: per, page, marketing_type (BUY/RENT), rs_type, city, zip_code, price_from, price_to, sort_by (created_at, updated_at, price, living_space, rooms, city), order (asc/desc), heading (h2–h4). Attribute können die Liste nur einschränken, nie nicht-öffentliche Objekte freischalten.</p>
+		</div>
+		<?php
+	}
+
+	private function renderStatusField( string $key, string $label, string $description, array $statuses, array $selected ): void {
+		$name     = Settings::OPTION . '[' . $key . '][]';
+		$known    = array_column( $statuses, 'id' );
+		$unknown  = array_diff( Settings::intList( $selected ), $known );
+		?>
+		<tr>
+			<th scope="row"><?php echo esc_html( $label ); ?></th>
+			<td>
+				<fieldset>
+					<legend class="screen-reader-text"><?php echo esc_html( $label ); ?></legend>
+					<?php foreach ( $statuses as $status ) : ?>
+						<label style="display:block">
+							<input type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $status['id'] ); ?>" <?php checked( in_array( $status['id'], $selected, true ) ); ?>>
+							<?php echo esc_html( $status['name'] ); ?> <span class="description">(ID <?php echo esc_html( (string) $status['id'] ); ?>)</span>
+						</label>
+					<?php endforeach; ?>
+					<?php foreach ( $unknown as $id ) : // Auswahl erhalten, auch wenn die Statusliste gerade nicht ladbar ist. ?>
+						<label style="display:block">
+							<input type="checkbox" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr( (string) $id ); ?>" checked>
+							Status-ID <?php echo esc_html( (string) $id ); ?> <span class="description">(in Propstack nicht gefunden)</span>
+						</label>
+					<?php endforeach; ?>
+					<p class="description"><?php echo esc_html( $description ); ?></p>
+				</fieldset>
+			</td>
+		</tr>
+		<?php
+	}
+
+	private function renderSyncBox(): void {
+		$state  = ( new SyncState() )->get();
+		$store  = PropertyStore::create();
+		$counts = $store->countsByState();
+		$fmt    = static fn ( $v ) => is_string( $v ) && '' !== $v ? get_date_from_gmt( $v, 'd.m.Y H:i:s' ) : '–';
+		?>
+		<h2>Sync-Status</h2>
+		<table class="widefat striped" style="max-width:720px">
+			<tbody>
+				<tr><th>Öffentlich sichtbar</th><td><?php echo esc_html( (string) $store->countVisible( $this->settings->publicStatusIds() ) ); ?></td></tr>
+				<tr><th>Im Bestand (aktiv / verkauft / entfernt)</th><td><?php echo esc_html( sprintf( '%d / %d / %d', $counts['active'], $counts['sold'], $counts['removed'] ) ); ?></td></tr>
+				<tr><th>Letzter Voll-Sync</th><td><?php echo esc_html( $fmt( $state['last_full_at'] ?? null ) ); ?></td></tr>
+				<tr><th>Letzter inkrementeller Sync</th><td><?php echo esc_html( $fmt( $state['last_incremental_at'] ?? null ) ); ?></td></tr>
+				<tr><th>Letzter Fehler</th><td><?php echo esc_html( isset( $state['last_error'] ) ? $fmt( $state['last_error_at'] ?? null ) . ' – ' . $state['last_error'] : '–' ); ?></td></tr>
+				<tr><th>Nächster geplanter Sync</th><td><?php echo esc_html( ( $next = wp_next_scheduled( 'psl_sync_incremental' ) ) ? wp_date( 'd.m.Y H:i:s', $next ) : 'nicht geplant' ); ?></td></tr>
+				<tr><th>Sync läuft gerade</th><td><?php echo esc_html( ( new SyncLock() )->isLocked() ? 'ja' : 'nein' ); ?></td></tr>
+			</tbody>
+		</table>
+		<p>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_SYNC ); ?>">
+				<?php wp_nonce_field( self::ACTION_SYNC ); ?>
+				<?php submit_button( 'Jetzt vollständig synchronisieren', 'secondary', 'submit', false ); ?>
+			</form>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_STATUSES ); ?>">
+				<?php wp_nonce_field( self::ACTION_STATUSES ); ?>
+				<?php submit_button( 'Statusliste neu laden', 'secondary', 'submit', false ); ?>
+			</form>
+		</p>
+		<p class="description">Diagnose per WP-CLI: <code>wp psl status</code>, <code>wp psl sync --full</code>, <code>wp psl audit</code>.</p>
+		<?php
+	}
+
+	private function renderSyncResultNotice(): void {
+		if ( ! isset( $_GET['psl_synced'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nur Anzeige.
+			return;
+		}
+		$key     = 'psl_admin_sync_result_' . get_current_user_id();
+		$summary = get_transient( $key );
+		delete_transient( $key );
+		if ( ! is_string( $summary ) ) {
+			return;
+		}
+		$ok = '1' === $_GET['psl_synced']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		printf( '<div class="notice notice-%s"><p>%s</p></div>', $ok ? 'success' : 'error', esc_html( $summary ) );
+	}
+}

@@ -1,0 +1,8 @@
+{
+  "id": 1000003,
+  "street": "Ohneflagstraße",
+  "house_number": "1",
+  "zip_code": "12345",
+  "city": "Teststadt",
+  "status": { "id": 900002, "name": "Andere" }
+}
