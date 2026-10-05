@@ -30,6 +30,7 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 - `DISABLE_WP_CRON = true`, damit kein Cron-Sync Testdaten verändert.
 - Plugin per Junction eingebunden; API-Key zur Laufzeit aus `Propstack-API.txt` als `PSL_API_KEY` (Datei wird nicht kopiert).
 - mu-plugin `tests/Support/mu-plugins/psl-http-spy.php` (nur Testinstanz) protokolliert alle ausgehenden HTTP-Requests mit Kontext (`web`/`cron`/`cli`).
+- mu-plugin `tests/Support/mu-plugins/psl-test-hooks.php` (nur Testinstanz): optionaler Filter für das Status-Label (Option `psl_test_status_label`), um Escaping von Filter-Ausgaben zu testen.
 - Testserver nur über die selbst dokumentierte PID beenden – keine globalen `taskkill`-Befehle.
 
 ## Fixtures
@@ -47,6 +48,17 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 - StateResolver: 19 Zustandskombinationen
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
+
+## Ergebnisse Phase 3 (2026-10-05)
+
+- Unit: 94 Tests, 336 Assertions – grün (neu: `FormatterTest`, `PropertyViewModelTest` mit anonymisierter Fixture `unit-full.json`).
+- Integration: 16 Tests, 66 Assertions – grün.
+- HTTP: 16 Tests, 205 Assertions – grün (neu: `DetailPageContentTest`: alle Abschnitte beim vollständigen Objekt, keine leeren Sektionen beim Minimalobjekt, Galerie-/Lightbox-Markup, Grundriss nur im Grundriss-Bereich, Datenschutz, öffentliche Maklerfelder, XSS inkl. Status-Label, Assets nur auf Detailseiten, Request-Nachweis).
+- Request-Nachweis: 0 ausgehende Requests bei allen Detailseiten-Aufrufen.
+- **Browser (Edge headless über `puppeteer-core`, nur Testumgebung):** kein horizontaler Überlauf bei 390/768/1024/1366 px (je 3 echte Objekte, darunter 23 Bilder, 4 Grundrisse, Mietobjekt); Lightbox per Klick, Enter, Pfeiltasten (Umlauf), Buttons, Wischen; ESC und Schließen-Button; Tab/Shift+Tab bleiben im Dialog; Fokus kehrt zum Auslöser zurück; Grundrisse als eigene Gruppe; CTA springt zu `#psl-contact`; keine Koordinaten bei verborgener Adresse im DOM; keine JS-Fehler des Plugins (einziger Konsolenfehler: `/favicon.ico` 404 des Testservers).
+- **Lighthouse 12 (Edge, Detailseite mit 23 Bildern):** mobil Performance 88, Accessibility 100, Best Practices 96, LCP 3,7 s, CLS 0, TBT 0 ms; Desktop Performance 100, Accessibility 100, Best Practices 96, LCP 0,5 s, CLS 0. Einordnung: render-blocking/ungenutztes CSS stammt überwiegend vom Theme (152 KiB); „Properly size images“ betrifft das Hauptbild (keine Propstack-Zwischengröße 600–1920 px); der PHP-Built-in-Testserver (single-threaded, ~380 ms TTFB) ist nicht repräsentativ. Werte sind Orientierung, nicht Produktionsmessung.
+- Visuell geprüft (Screenshots, nicht im Repository): Desktop und Mobil; behoben: Lightbox-Fokusfalle, Wischen (Bild-Drag), Wortumbruch der H1 auf Mobil, `sizes` des Hauptbilds.
+- Werkzeuge `puppeteer-core`/`lighthouse` liegen nur in der Testumgebung (kein Bestandteil des Repositories).
 
 ## Ergebnisse Phase 2 (2026-10-05)
 

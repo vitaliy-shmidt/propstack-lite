@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: nach Phase 2 (Plugin-Version 0.3.0). Geplante Teile sind als **Geplant** markiert.
+Stand: nach Phase 3 (Plugin-Version 0.3.0). Geplante Teile sind als **Geplant** markiert.
 
 ## Grundprinzipien
 
@@ -59,9 +59,11 @@ Besucher ─► /immobilien/{slug}-{id}/ ─► Routing\Router (Rewrite, Query-V
 | `Routing\UrlGenerator` | einzige Quelle für Detail-, kanonische, Legacy- und Übersichts-URLs (absolut, Unterverzeichnis-fähig) |
 | `Routing\RouteResolver`, `RouteDecision` | reine Statusentscheidung 200/404/410 aus gespeichertem Zustand und Zeit |
 | `Frontend\DetailController` | WordPress-Request-Steuerung der Detailseite: Query, 404/410, 301, Robots, Canonical, Titel, Body-Klassen, Template |
-| `Frontend\PropertyViewModel` | Template-Daten aus dem gewhitelisteten Modell, Status-Badges |
+| `Frontend\PropertyViewModel` | präsentationsfertige Template-Daten aus dem gewhitelisteten Modell: Breadcrumb, Preis, Kurzfakten, Eckdaten-Gruppen, Merkmale, Energie, Galerie/Grundrisse (nur HTTPS, `srcset`), Ansprechpartner, Status-Badges ([frontend.md](frontend.md)) |
+| `Frontend\Formatter` | deutsche Formatierung (Geld, Monatsbeträge, €/m², Flächen, Zimmer, Etage, Datum, Energiekennwert) und Enum-Übersetzung |
+| `assets/js/psl-gallery.js` | Lightbox (Vanilla JS, `<dialog>`, Tastatur/Touch), nur auf Detailseiten mit Bildern |
 | `Frontend\TemplateLoader` | Templates mit Theme-Override (`{theme}/propstack-lite/`), Header/Footer für klassische und Block-Themes |
-| `Frontend\ListShortcode`, `Formatter` | Listenausgabe aus dem Store, deutsche Formatierung |
+| `Frontend\ListShortcode` | Listenausgabe aus dem Store |
 | `Theme\AvadaAdapter` | optional, nur bei aktivem Avada; markiert Seite/Wrapper (**nicht verifiziert**) |
 | `Admin\SettingsPage`, `Admin\Notices` | Einstellungen, Sync-Status, „Jetzt synchronisieren“, Hinweise |
 | `Rest\WebhookController` | `POST /wp-json/propstack/v1/webhook` → plant Sync (kein Sync im Request) |

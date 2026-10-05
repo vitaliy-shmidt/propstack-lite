@@ -89,7 +89,10 @@ Fallback auf einen zentralen Picaflor-Kontakt (Einstellung): **Geplant (Phase 3)
 | `property_space_value`, `usable_floor_space`, `total_floor_space`, `balcony_space`, `garden_space` | float | ja |
 | `floor` | int | **nein** (0 = Erdgeschoss) |
 | `number_of_floors`, `number_of_parking_spaces`, `construction_year`, `last_refurbishment` | int | ja |
-| `bathroom`, `flooring_type` | Liste | – |
+| `bathroom`, `flooring_type`, `parking_space_types` (Phase 3) | Liste | – |
+| `pets_allowed` (Phase 3) | Text („Ja“/„Nein“/„Nach Vereinbarung“) | – |
+
+Hinweis zu Werten (Stichprobe 50 aktive Objekte): Fast alle Textfelder liefert Propstack bereits als deutsche Bezeichnung („Erstbezug“, „Fernwärme“, „Tiefgarage“); `floor` kommt als String („3“). Technische Enums nur bei `energy_efficiency_class` (gemischt `A_PLUS` und `A+`), `rs_category`, `object_type` → Übersetzung über `FieldCatalog::ENUM_LABELS`; unbekannte Enum-Werte werden im Frontend nicht angezeigt. Deutsche Feldbezeichnungen: `FieldCatalog::LABELS`, Merkmalsbezeichnungen: `FieldCatalog::FEATURE_LABELS`.
 
 **ENERGY:** `energy_certificate_availability`, `building_energy_rating_type`, `energy_certificate_start_date`, `energy_certificate_end_date`, `energy_certificate_creation_date` (Text); `energy_efficiency_value`, `thermal_characteristic` (float, 0 = leer); `energy_efficiency_class` (Enum, z. B. `A_PLUS`); `energy_consumption_contains_warm_water` (bool); `equipment_technology_construction_year` (int, 0 = leer).
 
@@ -109,7 +112,7 @@ Gepflegt in `FieldCatalog::FORBIDDEN_KEYS` (geprüft von Tests und `wp psl audit
 - **Tokens/CRM-IDs:** `token`, `is24_contact_id`, `scout_id`, `broker_id`, `team_id`, `inquiry_department_id`, `location_id`, `old_crm_id`
 - **Portal-/Kontaktdaten:** `openimmo_email`, `openimmo_firstname`, `openimmo_lastname`, `openimmo_phone`
 - **Bewertung:** `valuation_price`, `valuation_price_from`, `valuation_price_to`
-- **Sonstiges:** `custom_fields`, `pricehubble_username`, `phone_system_number(s)`
+- **Sonstiges:** `custom_fields`, `pricehubble_username`, `phone_system_number(s)`, `contract_type` (Art des Maklerauftrags, intern – Phase 3 ergänzt)
 - **Adressfelder mit Straße:** `lp_address`, `short_address` (sowie `address` und `name`, die nicht gelesen werden)
 - **Interne Maklerkontakte:** `broker.email`, `broker.phone`, `broker.cell`
 - **Nicht freigegebene Medien:** Bilder mit `is_private` oder `is_not_for_exposee`

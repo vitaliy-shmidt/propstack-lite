@@ -1,17 +1,24 @@
-/* Propstack Listings Lite – Detailseite (Basis). Nur Layout; Typografie/Farben erbt das Theme. */
+/*
+ * Propstack Listings Lite – Detailseite.
+ * Nur Layout/Grid/Galerie/Abstände. Typografie, Grundfarben und Buttonstil kommen vom Theme.
+ * Alle Selektoren unter .psl-*; keine globalen Element-Regeln.
+ */
+
 .psl-detail-wrap {
-	--psl-gap: 24px;
+	--psl-gap: clamp(16px, 3vw, 32px);
 	--psl-radius: 12px;
 	--psl-border: rgba(0, 0, 0, 0.12);
 	--psl-muted: rgba(0, 0, 0, 0.65);
-	--psl-badge-bg: rgba(0, 0, 0, 0.06);
-	--psl-reserved-bg: #b45309;
+	--psl-surface: rgba(0, 0, 0, 0.04);
+	--psl-reserved-bg: #92400e;
 	--psl-sold-bg: #991b1b;
 	--psl-badge-fg: #fff;
 	box-sizing: border-box;
-	max-width: 1100px;
+	width: 100%;
+	max-width: 1200px;
 	margin: 0 auto;
-	padding: 24px 16px 48px;
+	padding: 16px 16px 48px;
+	overflow-wrap: break-word;
 }
 
 /* Theme stellt eigene Container bereit (z. B. Avada-Adapter): keine zusätzliche Begrenzung. */
@@ -31,8 +38,32 @@
 	display: flex;
 	flex-direction: column;
 	gap: var(--psl-gap);
+	min-width: 0;
 }
 
+/* ------------------------------------------------------------- Breadcrumb */
+.psl-breadcrumb__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: 0.9em;
+	color: var(--psl-muted);
+}
+
+.psl-breadcrumb__item {
+	margin: 0;
+}
+
+.psl-breadcrumb__item + .psl-breadcrumb__item::before {
+	content: "›";
+	margin-right: 8px;
+	color: var(--psl-muted);
+}
+
+/* ------------------------------------------------------------------ Kopf */
 .psl-detail__badges {
 	display: flex;
 	flex-wrap: wrap;
@@ -44,13 +75,15 @@
 	display: inline-block;
 	padding: 3px 10px;
 	border-radius: 999px;
-	background: var(--psl-badge-bg);
+	background: var(--psl-surface);
 	font-size: 0.85em;
+	line-height: 1.5;
 }
 
 .psl-detail .psl-badge--reserved {
 	background: var(--psl-reserved-bg);
 	color: var(--psl-badge-fg);
+	font-weight: 700;
 }
 
 .psl-detail .psl-badge--sold {
@@ -61,86 +94,297 @@
 
 .psl-detail__title {
 	margin: 0;
-	line-height: 1.2;
+	line-height: 1.15;
 	overflow-wrap: break-word;
 	hyphens: auto;
 }
 
 .psl-detail__location {
-	margin: 6px 0 0;
+	margin: 8px 0 0;
 	color: var(--psl-muted);
 }
 
-.psl-detail__media {
+/* ------------------------------------------------------- Hero / Galerie */
+.psl-detail__hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--psl-gap);
+	align-items: start;
+}
+
+.psl-gallery {
+	min-width: 0;
+}
+
+.psl-gallery__main {
 	position: relative;
 	margin: 0;
 	overflow: hidden;
 	border-radius: var(--psl-radius);
-	background: var(--psl-badge-bg);
+	background: var(--psl-surface);
 	aspect-ratio: 4 / 3;
 }
 
-.psl-detail__image {
+.psl-gallery__link {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.psl-gallery__image {
 	display: block;
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 }
 
-.psl-detail__image-count {
+.psl-gallery__all {
 	position: absolute;
 	right: 12px;
 	bottom: 12px;
-	padding: 4px 10px;
+	padding: 8px 14px;
+	border: 0;
 	border-radius: 999px;
-	background: rgba(0, 0, 0, 0.6);
+	background: rgba(0, 0, 0, 0.72);
 	color: #fff;
-	font-size: 0.85em;
+	font: inherit;
+	font-size: 0.9em;
+	cursor: pointer;
 }
 
-.psl-facts {
+.psl-gallery__all[hidden] {
+	display: none;
+}
+
+.psl-gallery__thumbs {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-	gap: 12px;
+	grid-auto-flow: column;
+	grid-auto-columns: calc((100% - 3 * 8px) / 4);
+	gap: 8px;
+	margin: 8px 0 0;
+	padding: 0 0 4px;
+	list-style: none;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	overscroll-behavior-x: contain;
+}
+
+.psl-gallery__thumb {
+	margin: 0;
+	scroll-snap-align: start;
+	overflow: hidden;
+	border-radius: 8px;
+	background: var(--psl-surface);
+	aspect-ratio: 1 / 1;
+}
+
+.psl-gallery__thumb img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.psl-gallery__placeholder {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	aspect-ratio: 4 / 3;
+	padding: 24px;
+	border-radius: var(--psl-radius);
+	background: var(--psl-surface);
+	color: var(--psl-muted);
+	text-align: center;
+}
+
+.psl-gallery__placeholder p {
 	margin: 0;
 }
 
-.psl-facts__item {
-	padding: 12px 16px;
+.psl-gallery a:focus-visible,
+.psl-gallery button:focus-visible {
+	outline: 3px solid currentColor;
+	outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------- Summary */
+.psl-summary {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px;
 	border: 1px solid var(--psl-border);
 	border-radius: var(--psl-radius);
 }
 
-/* Theme-Stile für dl/dt/dd (Einrückungen) gezielt neutralisieren. */
-.psl-detail-wrap .psl-facts dt {
+.psl-summary__price {
+	display: flex;
+	flex-direction: column;
 	margin: 0;
-	padding: 0;
+}
+
+.psl-summary__price-label {
 	color: var(--psl-muted);
 	font-size: 0.9em;
 }
 
-.psl-detail-wrap .psl-facts dd {
-	margin: 4px 0 0;
+.psl-summary__price-value {
+	font-size: 1.6em;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.psl-detail-wrap .psl-summary__facts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+	gap: 12px;
+	margin: 0;
+}
+
+.psl-detail-wrap .psl-summary__fact dt {
+	margin: 0;
 	padding: 0;
-	font-size: 1.25em;
+	color: var(--psl-muted);
+	font-size: 0.85em;
+}
+
+.psl-detail-wrap .psl-summary__fact dd {
+	margin: 2px 0 0;
+	padding: 0;
 	font-weight: 600;
 }
 
-.psl-detail__section h2 {
-	margin: 0 0 12px;
+/* -------------------------------------------------------------- Sektionen */
+.psl-detail__body {
+	display: flex;
+	flex-direction: column;
+	gap: calc(var(--psl-gap) * 1.25);
+	min-width: 0;
 }
 
-.psl-detail__notice {
-	padding: 16px 20px;
-	border-left: 4px solid var(--psl-sold-bg);
-	border-radius: 4px;
-	background: var(--psl-badge-bg);
+.psl-section {
+	min-width: 0;
 }
 
-.psl-detail__notice p {
+.psl-section__title {
+	margin: 0 0 16px;
+}
+
+.psl-section__subtitle {
+	margin: 16px 0 8px;
+}
+
+.psl-prose > :first-child {
+	margin-top: 0;
+}
+
+.psl-prose > :last-child {
+	margin-bottom: 0;
+}
+
+/* Eckdaten */
+.psl-fact-groups {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+	gap: var(--psl-gap);
+}
+
+.psl-fact-group__title {
 	margin: 0 0 8px;
+	font-size: 1.05em;
 }
 
+.psl-detail-wrap .psl-fact-list {
+	margin: 0;
+}
+
+.psl-detail-wrap .psl-fact-list__row {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--psl-border);
+}
+
+.psl-detail-wrap .psl-fact-list__row dt {
+	margin: 0;
+	padding: 0;
+	color: var(--psl-muted);
+}
+
+.psl-detail-wrap .psl-fact-list__row dd {
+	margin: 0;
+	padding: 0;
+	font-weight: 600;
+	text-align: right;
+}
+
+.psl-fact-list--energy {
+	max-width: 640px;
+}
+
+/* Ausstattung */
+.psl-detail-wrap .psl-features {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+	gap: 8px 16px;
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.psl-detail-wrap .psl-features__item {
+	position: relative;
+	margin: 0;
+	padding-left: 24px;
+}
+
+.psl-detail-wrap .psl-features__item::before {
+	content: "✓";
+	position: absolute;
+	left: 0;
+	font-weight: 700;
+}
+
+/* Grundrisse */
+.psl-detail-wrap .psl-floorplans {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+	gap: 16px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.psl-floorplans__item {
+	margin: 0;
+}
+
+.psl-floorplans__link {
+	display: block;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+	border: 1px solid var(--psl-border);
+	border-radius: 8px;
+	background: #fff;
+}
+
+.psl-floorplans__link img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.psl-floorplans__caption {
+	margin: 6px 0 0;
+	color: var(--psl-muted);
+	font-size: 0.9em;
+}
+
+/* Ansprechpartner */
 .psl-agent {
 	display: flex;
 	flex-wrap: wrap;
@@ -160,25 +404,208 @@
 }
 
 .psl-agent__name {
-	font-weight: 600;
+	font-weight: 700;
 }
 
-.psl-button {
+.psl-agent__position {
+	color: var(--psl-muted);
+}
+
+.psl-detail-wrap .psl-agent__channels {
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.psl-detail-wrap .psl-agent__channels li {
+	margin: 0 0 4px;
+}
+
+.psl-agent__channel-label {
 	display: inline-block;
-	padding: 10px 16px;
+	min-width: 64px;
+	color: var(--psl-muted);
+}
+
+/* Kontakt */
+.psl-section--contact {
+	padding: 24px;
+	border-radius: var(--psl-radius);
+	background: var(--psl-surface);
+	scroll-margin-top: 24px;
+}
+
+.psl-contact__context {
+	margin: 0;
+	color: var(--psl-muted);
+}
+
+/* Hinweise und Buttons */
+.psl-notice {
+	padding: 16px 20px;
+	border-left: 4px solid var(--psl-sold-bg);
+	border-radius: 4px;
+	background: var(--psl-surface);
+}
+
+.psl-notice p {
+	margin: 0 0 8px;
+}
+
+.psl-detail-wrap .psl-button {
+	display: inline-block;
+	padding: 12px 18px;
 	border: 1px solid currentColor;
 	border-radius: 8px;
+	text-align: center;
 	text-decoration: none;
 }
 
-.psl-button:focus-visible,
-.psl-detail a:focus-visible {
-	outline: 2px solid currentColor;
+.psl-detail-wrap .psl-button--primary {
+	font-weight: 700;
+}
+
+.psl-detail-wrap a:focus-visible,
+.psl-detail-wrap button:focus-visible {
+	outline: 3px solid currentColor;
 	outline-offset: 2px;
 }
 
-@media (min-width: 900px) {
-	.psl-detail__media {
-		aspect-ratio: 16 / 9;
+/* --------------------------------------------------------------- Lightbox */
+.psl-lightbox {
+	width: 100vw;
+	max-width: 100vw;
+	height: 100vh;
+	max-height: 100vh;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: rgba(0, 0, 0, 0.92);
+	color: #fff;
+	touch-action: pan-y pinch-zoom; /* horizontale Wischgesten an das Skript geben */
+}
+
+.psl-lightbox::backdrop {
+	background: rgba(0, 0, 0, 0.6);
+}
+
+.psl-lightbox__inner {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	padding: 56px 16px 48px;
+}
+
+.psl-lightbox__figure {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	max-width: 100%;
+	max-height: 100%;
+	margin: 0;
+}
+
+.psl-lightbox__image {
+	display: block;
+	max-width: 100%;
+	max-height: calc(100vh - 140px);
+	object-fit: contain;
+}
+
+.psl-lightbox__caption {
+	text-align: center;
+}
+
+.psl-lightbox__close,
+.psl-lightbox__nav {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	border: 0;
+	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.15);
+	color: #fff;
+	font-size: 28px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.psl-lightbox__close:focus-visible,
+.psl-lightbox__nav:focus-visible {
+	outline: 3px solid #fff;
+	outline-offset: 2px;
+}
+
+.psl-lightbox__close {
+	top: 8px;
+	right: 8px;
+}
+
+.psl-lightbox__nav--prev {
+	left: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.psl-lightbox__nav--next {
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.psl-lightbox__nav[hidden] {
+	display: none;
+}
+
+.psl-lightbox__counter {
+	position: absolute;
+	bottom: 12px;
+	margin: 0;
+	font-size: 0.9em;
+}
+
+html.psl-lightbox-open {
+	overflow: hidden;
+}
+
+/* ------------------------------------------------------------- Responsive */
+
+/*
+ * Bewusste Ausnahme von „Typografie bestimmt das Theme“: Auf schmalen Bildschirmen würden sehr große
+ * Theme-H1 lange deutsche Komposita mitten im Wort umbrechen. Nur hier wird die Titelgröße begrenzt.
+ */
+@media (max-width: 599px) {
+	.psl-detail__title {
+		font-size: clamp(1.75rem, 8vw, 2.5rem);
+	}
+}
+@media (min-width: 768px) {
+	.psl-gallery__thumbs {
+		grid-auto-columns: calc((100% - 5 * 8px) / 6);
+	}
+}
+
+@media (min-width: 1024px) {
+	.psl-detail__hero {
+		grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+	}
+
+	.psl-summary {
+		position: sticky;
+		top: 24px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.psl-gallery__thumbs {
+		scroll-behavior: auto;
 	}
 }

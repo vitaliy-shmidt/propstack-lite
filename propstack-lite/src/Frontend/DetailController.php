@@ -25,7 +25,8 @@ use PropstackLite\Support\Clock;
  */
 final class DetailController {
 
-	public const STYLE_HANDLE = 'propstack-lite-detail';
+	public const STYLE_HANDLE  = 'propstack-lite-detail';
+	public const SCRIPT_HANDLE = 'propstack-lite-gallery';
 
 	private static ?DetailController $current = null;
 
@@ -53,6 +54,7 @@ final class DetailController {
 		add_filter( 'wp_robots', [ $this, 'robots' ] );
 		add_action( 'wp_head', [ $this, 'printCanonical' ], 1 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueueAssets' ] );
+		add_filter( 'wp_resource_hints', [ $this, 'resourceHints' ], 10, 2 );
 	}
 
 	/** Controller des laufenden Requests (für Templates). */
@@ -214,6 +216,22 @@ final class DetailController {
 			return;
 		}
 		wp_enqueue_style( self::STYLE_HANDLE, PSL_URL . 'assets/css/psl-detail.css', [], PSL_VERSION );
+
+		// Galerie-Skript nur, wenn es Bilder gibt (kein jQuery, ~3 KB, defer).
+		if ( null !== $this->view && ( [] !== $this->view['gallery'] || [] !== $this->view['floorplans'] ) ) {
+			wp_enqueue_script( self::SCRIPT_HANDLE, PSL_URL . 'assets/js/psl-gallery.js', [], PSL_VERSION, [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		}
+	}
+
+	/** preconnect zum Propstack-Bild-CDN – nur auf Detailseiten mit Bildern. */
+	public function resourceHints( array $urls, string $relation ): array {
+		if ( 'preconnect' === $relation && null !== $this->view && null !== $this->view['mainImage'] && Router::isPropertyRequest() ) {
+			$host = wp_parse_url( (string) $this->view['mainImage']['src'], PHP_URL_HOST );
+			if ( is_string( $host ) && '' !== $host ) {
+				$urls[] = [ 'href' => 'https://' . $host, 'crossorigin' => 'anonymous' ];
+			}
+		}
+		return $urls;
 	}
 
 	/* ---------------------------------------------------------------- Helfer */

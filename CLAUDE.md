@@ -3,7 +3,7 @@
 **Propstack Listings Lite** ist ein WordPress-Plugin für Picaflor Immobilien: Es synchronisiert öffentliche Immobilien aus Propstack (führendes System) in eine lokale Tabelle und stellt sie auf der Website dar. Später kommen dynamische, SEO-fähige Detailseiten, Anfragen über Contact Form 7 und Kampagnen-Tracking dazu.
 
 - Plugin: `propstack-lite/` (Einstieg `propstack-lite.php`, Code in `src/`, Namespace `PropstackLite\`)
-- Dokumentation: `docs/` – **zuerst `docs/README.md` lesen** (Status, offene Punkte, Verweise)
+- Dokumentation: `docs/` – **zuerst `docs/README.md` lesen** (Status, offene Punkte, Verweise); Detailseite/Templates/Galerie: `docs/frontend.md`
 - Theme der Live-Seite: Avada (lokal nicht vorhanden, Integration nur über Adapter)
 
 ## Aktueller Stand

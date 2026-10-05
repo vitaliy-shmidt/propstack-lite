@@ -1,5 +1,29 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-05 – Phase 3: Vollständige Immobilien-Detailseite
+
+**Wichtigste Änderungen**
+- Detailseite modular aus 15 überschreibbaren Teil-Templates: Breadcrumb, Kopf, Galerie, Kurzfakten mit CTA „Anfrage senden“ (Anker `#psl-contact`), Verkauft-Hinweis, Eckdaten (Preise & Kosten / Flächen & Räume / Objekt & Zustand), Objektbeschreibung, Ausstattung (Merkmalsliste + Text), Lage, Energie, Grundrisse, Sonstige Angaben/Provisionshinweis, Ansprechpartner, Kontaktbereich, Lightbox. Leere Bereiche erscheinen nicht.
+- `PropertyViewModel` liefert präsentationsfertige Daten (Templates fast logikfrei); `Formatter` erweitert (Monatsbeträge, €/m², Zimmer, Etage, Datum, Energiekennwert, Ja/Nein, Enum-Übersetzung, „Preis auf Anfrage“ inkl. `price_on_inquiry`).
+- Galerie: Hauptbild mit `srcset`/`sizes`/`fetchpriority="high"`, Vorschauleiste (lazy, feste Maße), neutraler Platzhalter ohne Bilder; Grundrisse getrennt. Lightbox `assets/js/psl-gallery.js` (Vanilla JS, `<dialog>`, Tastatur, Touch, Fokusführung), nur auf Detailseiten mit Bildern, `defer`; `preconnect` zum Bild-CDN nur dort.
+- `FieldCatalog`: neue Whitelist-Felder `parking_space_types`, `pets_allowed`; deutsche `LABELS`, `FEATURE_LABELS`, `ENUM_LABELS` (`energy_efficiency_class`, `object_type`, `rs_category`); `contract_type` auf die Verbotsliste.
+- Neuer Filter `psl_property_fallback_agent`; `psl_property_similar` wird jetzt auf allen 200-Detailseiten nach dem Artikel ausgelöst (nicht nur in der Verkauft-Phase).
+- CSS `psl-detail.css` neu: Hero-Grid, Faktengruppen, Galerie, Lightbox, responsive (390/768/1024/1366 px geprüft); H1-Begrenzung nur unter 600 px.
+- Dokumentation: neues `docs/frontend.md`.
+
+**Bugs behoben (während der Phase gefunden)**
+- Lightbox: Fokus verließ den Dialog per Tab; Wischen wurde durch Bild-Drag abgebrochen.
+- Mobil: Wortumbruch langer Titel mitten im Wort; `sizes` des Hauptbilds an das Layout angepasst.
+
+**Neue Dateien:** `templates/parts/{breadcrumb,property-gallery,property-summary,property-text,property-equipment,property-location,property-energy,property-floorplans,property-other,property-contact,lightbox}.php`, `assets/js/psl-gallery.js`, `tests/Unit/{FormatterTest,PropertyViewModelTest}.php`, `tests/Http/DetailPageContentTest.php`, `tests/fixtures/unit-full.json`, `tests/Support/mu-plugins/psl-test-hooks.php`, `docs/frontend.md`.
+**Entfernt:** `templates/parts/property-description.php` (ersetzt durch das allgemeine `property-text.php`).
+
+**DB-Migrationen:** keine. Neue Whitelist-Felder erscheinen nach dem nächsten Voll-Sync (`wp psl sync --full`).
+
+**Breaking Changes:** Struktur des ViewModels geändert (`facts`/`image`/`description` → `factGroups`/`keyFacts`/`gallery`/`mainImage`/`texts`). Theme-Overrides aus Phase 2 für `parts/property-description.php` greifen nicht mehr; `parts/property-header.php` enthält kein Hauptbild mehr (jetzt `property-gallery.php`).
+
+**Offene Punkte:** Avada-Verifikation (Sticky-Box, Ankersprung unter fixem Header, optionale Avada-Lightbox), zentraler Fallback-Ansprechpartner als Einstellung, ähnliche Immobilien (Inhalt), Propstack-Bildgröße zwischen 600 und 1920 px fehlt.
+
 ## 2026-10-05 – Phase 2: Routing und dynamische Detailseiten
 
 **Wichtigste Änderungen**

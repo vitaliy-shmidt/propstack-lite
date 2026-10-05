@@ -93,33 +93,4 @@ final class RouteResolverTest extends TestCase {
 		$this->assertSame( 'Reserviert', PropertyViewModel::statusBadge( self::property(), new RouteDecision( RouteDecision::RESERVED, 200 ) )['label'] );
 		$this->assertNull( PropertyViewModel::statusBadge( self::property(), new RouteDecision( RouteDecision::ACTIVE, 200 ) ) );
 	}
-
-	public function test_view_model_contains_only_prepared_public_data(): void {
-		$p    = Property::fromArray(
-			[
-				'id'            => 7,
-				'slug'          => 's',
-				'title'         => 'Titel',
-				'marketingType' => 'RENT',
-				'rsType'        => 'APARTMENT',
-				'baseRent'      => 900.0,
-				'livingSpace'   => 55.5,
-				'rooms'         => 2.0,
-				'address'       => [ 'hidden' => true, 'zipCode' => '10115', 'city' => 'Berlin' ],
-				'texts'         => [ 'description' => 'Text' ],
-				'images'        => [ [ 'id' => 1, 'title' => 'Bild', 'big' => 'https://images.propstack.de/b.jpg' ] ],
-			]
-		);
-		$view = PropertyViewModel::build( $p, new RouteDecision( RouteDecision::ACTIVE, 200 ), 'https://x/immobilien/s-7/', 'https://x/immobilien/' );
-
-		$this->assertSame( 'Titel', $view['title'] );
-		$this->assertSame( '10115 Berlin', $view['location'] );
-		$this->assertSame( [ 'label' => 'Kaltmiete', 'value' => '900 €' ], $view['facts'][0] );
-		$this->assertSame( [ 'label' => 'Wohnfläche', 'value' => '55,5 m²' ], $view['facts'][1] );
-		$this->assertSame( 'https://images.propstack.de/b.jpg', $view['image']['src'] );
-		$this->assertTrue( $view['allowContact'] );
-		$this->assertFalse( $view['isSold'] );
-		$this->assertArrayNotHasKey( 'publicExposeUrl', $view, 'Exposé-Link wird nicht gerendert' );
-		$this->assertArrayNotHasKey( 'unitId', $view );
-	}
 }

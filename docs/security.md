@@ -35,6 +35,10 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 - XSS-Tests mit `<script>alert(1)</script>` in Titel, Beschreibung, Maklername, Bildtitel – über den Mapper **und** direkt im Store (am Mapper vorbei) – erzeugen keinen ausführbaren Code; `javascript:`-URLs werden von `esc_url` verworfen – **getestet (HTTP-Suite)**.
 - Detailseiten: unbekannte IDs → 404 ohne API-Request; Weiterleitungen nur auf eigene URLs (`wp_safe_redirect`), Query-Parameter werden kodiert übernommen, interne Parameter entfernt – **umgesetzt**.
 - Kontaktdaten des Maklers werden in der Verkauft-Phase nicht angezeigt.
+- Phase 3: Bei `hide_address` stehen Straße, Hausnummer und Koordinaten weder im sichtbaren HTML noch in `data-*`-Attributen, JSON oder Skripten (das ViewModel enthält sie gar nicht) – **getestet** (Unit: ViewModel-JSON; HTTP: komplette Seite; Browser: DOM).
+- Galerie-/Lightbox-Daten in `data-*`-Attributen enthalten nur öffentliche Bild-URLs und -Titel (escaped); das ViewModel verwirft zusätzlich alle Nicht-HTTPS-URLs (Defense in Depth gegen `javascript:` in `srcset`) – **getestet**.
+- XSS-Tests Phase 3: Payloads in Beschreibung, Ausstattung, Lage, Sonstiges, Provisionshinweis, Maklername/-position, Bildtiteln (inkl. Attribut-Ausbruch `"` und `'`) sowie im Status-Label (über Filter) erzeugen keinen ausführbaren Code – **getestet (HTTP)**.
+- Interne Felder: `contract_type` (Maklerauftrag) zusätzlich auf der Verbotsliste; interne Broker-Felder, CRM-IDs, PriceHubble-Zugang, Notizen, Exposé-Link und Objektnummer erscheinen nicht im HTML – **getestet**.
 - Fehlerdetails nie öffentlich: Besucher sehen generische Meldungen; Details nur im Admin (Sync-Status) und im Debug-Log – **umgesetzt**.
 
 ## Eingaben, Berechtigungen, Nonces

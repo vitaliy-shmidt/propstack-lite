@@ -1,6 +1,6 @@
 <?php
 /**
- * Kopfbereich: Badges, Titel, Ort, Hauptbild.
+ * Kopfbereich: Status-Badge (mit Text), Objektart, Kauf/Miete, H1, Ort.
  * Überschreibbar unter {theme}/propstack-lite/parts/property-header.php.
  *
  * @var array $vars view
@@ -27,12 +27,3 @@ $badges = array_filter( [ $view['type'], $view['marketing'] ] );
 		<p class="psl-detail__location"><?php echo esc_html( $view['location'] ); ?></p>
 	<?php endif; ?>
 </header>
-
-<?php if ( $view['image'] && $view['image']['src'] ) : ?>
-	<figure class="psl-detail__media">
-		<img class="psl-detail__image" src="<?php echo esc_url( $view['image']['src'] ); ?>" alt="<?php echo esc_attr( $view['image']['alt'] ); ?>" fetchpriority="high" decoding="async">
-		<?php if ( $view['imageCount'] > 1 ) : ?>
-			<figcaption class="psl-detail__image-count"><?php echo esc_html( sprintf( '%d Bilder', $view['imageCount'] ) ); ?></figcaption>
-		<?php endif; ?>
-	</figure>
-<?php endif; ?>

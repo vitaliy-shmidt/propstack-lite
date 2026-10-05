@@ -25,6 +25,12 @@ Das Plugin baut Avada nicht nach. Datenlogik (Sync, Store, Mapper) und Routing (
 
 Bewusst **nicht** umgesetzt, weil ohne reale Installation nicht prüfbar: Avada-Container-Markup (`.fusion-row` o. Ä.), Avada-Hooks, Seitenoptionen (Title-Bar, Sidebar), Avada-Lightbox, Avada Layout Sections.
 
+## Phase 3 (vollständige Detailseite)
+
+- Der Adapter wurde in Phase 3 **nicht** erweitert. Die Detailseite ist theme-agnostisches HTML mit `.psl-*`-Klassen; die Galerie nutzt die plugin-eigene Lightbox (`<dialog>`, Vanilla JS) – sie funktioniert ohne Avada vollständig. Eine optionale Nutzung der Avada-Lightbox ist **nicht umgesetzt** und **noch nicht gegen reale Avada-Installation verifiziert**.
+- Plugin-CSS setzt keine globalen Regeln; Avadas Typografie, Farben und Buttons greifen. Die H1-Begrenzung unter 600 px (siehe [frontend.md](frontend.md)) wirkt auch unter Avada – **noch nicht gegen reale Avada-Installation verifiziert**.
+- Zu prüfen: Sticky-Kurzfaktenbox (`position: sticky; top: 24px`) in Kombination mit Avadas Sticky-Header (ggf. größerer Abstand nötig); Sprungziel `#psl-contact` unter einem fixen Header (`scroll-margin-top`).
+
 ## Zu prüfen in der realen Testumgebung
 
 1. Rendert Avadas `header.php`/`footer.php` auf der virtuellen Route ohne `$post` korrekt (Title-Bar, Sidebar, Container-Breite, Sticky-Header)? Avada liest Seitenoptionen typischerweise aus dem aktuellen Post.

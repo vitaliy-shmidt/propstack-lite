@@ -66,33 +66,11 @@ Die 30-Tage-Frist rechnet ab dem gespeicherten `sold_at` (UTC, erster Verkauft-Z
 - Body-Klassen: `psl-property`, `psl-property--{active|reserved|sold|gone}` (bei Avada zusätzlich `psl-theme-avada`).
 - Dokumenttitel: `document_title_parts` → Objekttitel (WordPress escaped die Teile); 410: „Immobilie nicht mehr verfügbar“.
 
-## Templates und Override
+## Templates und Hooks
 
-| Template | Zweck | Theme-Override |
-|---|---|---|
-| `templates/single-property.php` | Detailseite (200) | `{theme}/propstack-lite/single-property.php` |
-| `templates/property-gone.php` | 410-Seite | `{theme}/propstack-lite/property-gone.php` |
-| `templates/parts/property-header.php` | Badges, H1, Ort, Hauptbild | `{theme}/propstack-lite/parts/…` |
-| `templates/parts/property-facts.php` | Preis, Fläche, Zimmer, Grundstück | ebenso |
-| `templates/parts/property-description.php` | Beschreibung (`wp_kses_post` + `wpautop`) | ebenso |
-| `templates/parts/property-agent.php` | Ansprechpartner (nur öffentliche Felder; Kontaktdaten nur bei verfügbaren Objekten) | ebenso |
-| `templates/parts/property-sold-notice.php` | Hinweis in der Verkauft-Phase | ebenso |
+Seit Phase 3 vollständig beschrieben in [frontend.md](frontend.md): Template-Hierarchie (`single-property.php` + 15 Teile unter `parts/`), ViewModel, Formatter, Galerie/Lightbox, Hooks und Theme-Overrides. Die 410-Seite nutzt `property-gone.php` (Override `{theme}/propstack-lite/property-gone.php`); der 404-Fall nutzt das Theme-404-Template.
 
-Templates erhalten nur das ViewModel (`Frontend\PropertyViewModel`), nie Rohdaten. Header/Footer: klassische Themes über `get_header()`/`get_footer()`, Block-Themes über die Template-Parts `header`/`footer` (getestet mit Twenty Twenty-One und Twenty Twenty-Five).
-
-### Hooks
-
-| Hook | Typ | Zweck |
-|---|---|---|
-| `psl_before_property_content` / `psl_after_property_content` | Action | um den Inhaltsbereich (Theme-Wrapper, Avada) |
-| `psl_before_property` / `psl_after_property` | Action | innerhalb des Artikels |
-| `psl_property_contact` | Action | Platzhalter Kontaktformular (Phase 4), nur bei aktiv/reserviert |
-| `psl_property_similar` | Action | Platzhalter ähnliche Immobilien (Verkauft-Phase, 410) |
-| `psl_property_view_model` | Filter | ViewModel anpassen (`$view, $property, $decision`) |
-| `psl_property_template` | Filter | Template-Pfad (`$path, $decision`) |
-| `psl_property_status_label` | Filter | Badge-Text (`$label, $state, $property`) |
-| `psl_detail_container_classes` | Filter | CSS-Klassen des Wrappers |
-| `psl_overview_url` | Filter | URL der Übersicht |
+Header/Footer: klassische Themes über `get_header()`/`get_footer()`, Block-Themes über die Template-Parts `header`/`footer` (getestet mit Twenty Twenty-One und Twenty Twenty-Five).
 
 ## SEO-Basis (Phase 2, implementiert)
 

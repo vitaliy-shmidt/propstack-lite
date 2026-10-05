@@ -57,6 +57,83 @@ final class FieldCatalog {
 		'firing_types'                    => [ self::TYPE_TEXT, false ],
 		'bathroom'                        => [ self::TYPE_LIST, false ],
 		'flooring_type'                   => [ self::TYPE_LIST, false ],
+		'parking_space_types'             => [ self::TYPE_LIST, false ], // Phase 3, z. B. ["Tiefgarage", "Außenstellplatz"]
+		'pets_allowed'                    => [ self::TYPE_TEXT, false ], // Phase 3, Propstack liefert „Ja“/„Nein“/„Nach Vereinbarung“
+	];
+
+	/** Deutsche Bezeichnungen der Katalogfelder für die Ausgabe. */
+	public const LABELS = [
+		'price_per_sqm'                          => 'Preis pro m²',
+		'rent_subsidy'                           => 'Hausgeld',
+		'maintenance_reserve'                    => 'Instandhaltungsrücklage',
+		'service_charge'                         => 'Nebenkosten',
+		'heating_costs'                          => 'Heizkosten',
+		'deposit'                                => 'Kaution',
+		'parking_space_price'                    => 'Stellplatzmiete',
+		'courtage'                               => 'Provision',
+		'property_space_value'                   => 'Fläche',
+		'usable_floor_space'                     => 'Nutzfläche',
+		'total_floor_space'                      => 'Gesamtfläche',
+		'balcony_space'                          => 'Balkon-/Terrassenfläche',
+		'garden_space'                           => 'Gartenfläche',
+		'floor'                                  => 'Etage',
+		'number_of_floors'                       => 'Etagen im Gebäude',
+		'number_of_parking_spaces'               => 'Stellplätze',
+		'construction_year'                      => 'Baujahr',
+		'last_refurbishment'                     => 'Letzte Modernisierung',
+		'condition'                              => 'Zustand',
+		'interior_quality'                       => 'Qualität der Ausstattung',
+		'free_from'                              => 'Verfügbar ab',
+		'rented'                                 => 'Vermietet',
+		'apartment_type'                         => 'Wohnungstyp',
+		'building_type'                          => 'Haustyp',
+		'heating_type'                           => 'Heizungsart',
+		'firing_types'                           => 'Wesentlicher Energieträger',
+		'energy_certificate_availability'        => 'Energieausweis',
+		'building_energy_rating_type'            => 'Art des Energieausweises',
+		'energy_efficiency_class'                => 'Energieeffizienzklasse',
+		'energy_certificate_start_date'          => 'Ausgestellt am',
+		'energy_certificate_end_date'            => 'Gültig bis',
+		'energy_certificate_creation_date'       => 'Ausweis erstellt',
+		'energy_consumption_contains_warm_water' => 'Warmwasser im Kennwert enthalten',
+		'equipment_technology_construction_year' => 'Baujahr Anlagentechnik',
+	];
+
+	/** Ausstattungsmerkmale (nur bei `true`) → Bezeichnung. */
+	public const FEATURE_LABELS = [
+		'balcony'          => 'Balkon/Terrasse',
+		'cellar'           => 'Keller',
+		'lift'             => 'Aufzug',
+		'built_in_kitchen' => 'Einbauküche',
+		'garden'           => 'Garten/-mitbenutzung',
+		'guest_toilet'     => 'Gäste-WC',
+		'barrier_free'     => 'Barrierefrei',
+		'storeroom'        => 'Abstellraum',
+		'loggia'           => 'Loggia',
+		'sauna'            => 'Sauna',
+		'chimney'          => 'Kamin',
+		'kitchen_complete' => 'Küche vollständig ausgestattet',
+	];
+
+	/**
+	 * Übersetzung technischer Enum-Werte. Werte, die wie ein Enum aussehen, aber hier fehlen,
+	 * werden nicht ausgegeben (keine englischen Rohwerte im Frontend).
+	 */
+	public const ENUM_LABELS = [
+		'energy_efficiency_class' => [
+			'A_PLUS_PLUS' => 'A++', 'A_PLUS' => 'A+', 'A' => 'A', 'B' => 'B', 'C' => 'C', 'D' => 'D',
+			'E' => 'E', 'F' => 'F', 'G' => 'G', 'H' => 'H',
+		],
+		'object_type' => [
+			'LIVING' => 'Wohnen', 'COMMERCIAL' => 'Gewerbe', 'INVESTMENT' => 'Anlage',
+		],
+		'rs_category' => [
+			'APARTMENT' => 'Etagenwohnung', 'ROOF_STOREY' => 'Dachgeschosswohnung', 'MAISONETTE' => 'Maisonette',
+			'GROUND_FLOOR' => 'Erdgeschosswohnung', 'PENTHOUSE' => 'Penthouse', 'LOFT' => 'Loft',
+			'TERRACE_END_HOUSE' => 'Reiheneckhaus', 'MID_TERRACE_HOUSE' => 'Reihenmittelhaus', 'END_TERRACE_HOUSE' => 'Reihenendhaus',
+			'SINGLE_FAMILY_HOUSE' => 'Einfamilienhaus', 'TWO_FAMILY_HOUSE' => 'Zweifamilienhaus', 'MULTI_FAMILY_HOUSE' => 'Mehrfamilienhaus',
+			'SEMIDETACHED_HOUSE' => 'Doppelhaushälfte', 'VILLA' => 'Villa', 'BUNGALOW' => 'Bungalow',
+		],
 	];
 
 	/** Energieausweis-Angaben (GEG-relevant). */
@@ -127,6 +204,7 @@ final class FieldCatalog {
 		'broker_id',
 		'team_id',
 		'inquiry_department_id',
+		'contract_type',
 		'location_id',
 		'old_crm_id',
 		'pricehubble_username',
