@@ -1,0 +1,6 @@
+# Projekt-Root liegt im XAMPP-Webroot: Secrets und Entwicklungsdateien nicht ausliefern.
+<FilesMatch "^(Propstack-API\.txt|.*\.secret|\.env.*|CLAUDE\.md|.*\.code-workspace)$">
+	Require all denied
+</FilesMatch>
+
+RedirectMatch 404 ^/Picaflor/(\.git|docs|tools)(/.*)?$

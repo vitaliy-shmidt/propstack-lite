@@ -14,30 +14,13 @@ final class Propstack_Listings_Lite {
     const SALT_OPTION  = 'propstack_lite_cache_salt'; // für globales Cache-Flush
     const CACHE_PREFIX = 'propstack_lite_cache';
     const STYLE_HANDLE = 'propstack-lite';
-    private $current_item = null;
-    public static function activate() {
-        if (!get_option(self::SALT_OPTION)) {
-			add_option(self::SALT_OPTION, wp_generate_password(8, false, false));
-		}
-		flush_rewrite_rules();
-    }
 	public function __construct() {
-	  // System/URL-Ebene
-	  add_action('init',        [$this, 'psl_register_rewrite']);   // Rewrite-Regeln
-	  add_filter('query_vars',  [$this, 'psl_query_vars']);         // Query-Variablen
-
 	  // Admin
 	  add_action('admin_menu',  [$this, 'add_settings_page']);
 	  add_action('admin_init',  [$this, 'register_settings']);
 
 	  // REST
 	  add_action('rest_api_init', [$this, 'register_rest']);
-
-	  // Frontend – Request-spezifisch
-	  add_action('wp', [$this, 'psl_bootstrap_detail']);            // Detail-Objekt laden, Titel/Head setzen
-
-	  // Canonical/Umleitungen (früh, um redirect_canonical zu übersteuern)
-	  add_action('template_redirect', [$this, 'hook_canonical_detail_redirect'], 1);
 
 	  // Shortcodes
 	  add_shortcode('propstack_list',   [$this, 'shortcode']);
@@ -130,28 +113,6 @@ final class Propstack_Listings_Lite {
         </div>
         <?php
     }
-	private function fetch_single($id) {
-		$o        = get_option(self::OPTION, []);
-		$endpoint = 'https://api.propstack.de/v1/units/'.$id.'?new=1';
-		$api_key  = trim($o['api_key'] ?? '');
-		if (!$endpoint || !$api_key) return new WP_Error('psl_config', 'Config fehlt');
-		$url = $endpoint . '/' . rawurlencode($id);
-		$res = wp_remote_get($url, [
-			'timeout' => 20,
-			'headers' => ['X-API-KEY' => $api_key, 'Accept' => 'application/json'],
-			'user-agent' => 'Propstack Listings Lite (WP); ' . home_url(),
-		]);
-		if (is_wp_error($res)) return $res;
-		$code = (int) wp_remote_retrieve_response_code($res);
-		$body = (string) wp_remote_retrieve_body($res);
-		if ($code < 200 || $code >= 300) {
-			return new WP_Error('psl_http', 'HTTP '.$code.' | '.$body);
-		}
-		$data = json_decode($body, true);
-		if (!is_array($data)) return new WP_Error('psl_json', 'Kein JSON');
-		$r = $data['data'] ?? $data['result'] ?? $data['unit'] ?? $data;
-		return $r;
-}
 	public function register_rest() {
         register_rest_route('propstack/v1', '/webhook', [
             'methods'  => ['POST','GET'],
@@ -214,7 +175,11 @@ final class Propstack_Listings_Lite {
 
         $items = $this->get_items($a);
         if (is_wp_error($items)) {
-            return '<p>Fehler beim Abruf: ' . esc_html($items->get_error_message()) . '</p>';
+            // Fehlerdetails nur für Admins, Besucher sehen eine generische Meldung.
+            if (current_user_can('manage_options')) {
+                return '<p>Fehler beim Abruf: ' . esc_html($items->get_error_message()) . '</p>';
+            }
+            return '<p>Die Immobilien können derzeit nicht geladen werden. Bitte versuchen Sie es später erneut.</p>';
         }
         if (empty($items)) return '<p>Keine Objekte gefunden.</p>';
 
@@ -280,7 +245,6 @@ final class Propstack_Listings_Lite {
 
     /** DATEN **/
 	private function get_items($atts = []) {
-	$nocache = (!empty($o['dev_no_cache']) || (isset($_GET['psl_nocache']) && current_user_can('manage_options')) ||(defined('WP_DEBUG') && WP_DEBUG));
     $o        = get_option(self::OPTION, []);
     $endpoint = trim($o['endpoint'] ?? '');
     $api_key  = trim($o['api_key'] ?? '');
@@ -309,8 +273,6 @@ final class Propstack_Listings_Lite {
     }
 
     // Propstack nutzt "ordering"; manche Setups hatten "order" – wir normalisieren
-    $orderParam = array_key_exists('ordering', $base_qs) ? 'ordering' : 'ordering';
-
     // Erlaubte API-Keys (breit gehalten, damit du „alle Parameter“ nutzen kannst)
     // Lokale Keys werden später explizit ausgeschlossen.
     $is_safe_key = static function($k) {
@@ -507,10 +469,6 @@ final class Propstack_Listings_Lite {
 
     return $items;
 	}
-	private function build_url(string $endpoint, array $qs): string {
-		$sep = (strpos($endpoint, '?') !== false) ? '&' : '?';
-		return $endpoint . $sep . http_build_query($qs, '', '&', PHP_QUERY_RFC3986);
-	}
 	private function map_item($r) {
   $o = get_option(self::OPTION, []);
 
@@ -519,9 +477,12 @@ final class Propstack_Listings_Lite {
   // Bild sicher bestimmen
   $first_img = '';
   if (!empty($arr['images']) && is_array($arr['images'])) {
-      $img0 = $arr['images'][0] ?? [];
-      foreach (['medium','big','original'] as $k) {
-          if (!empty($img0[$k])) { $first_img = $img0[$k]; break; }
+      // Private Bilder und Grundrisse niemals als Vorschaubild verwenden.
+      foreach ($arr['images'] as $img0) {
+          if (!is_array($img0) || !empty($img0['is_private']) || !empty($img0['is_not_for_exposee']) || !empty($img0['is_floorplan'])) continue;
+          foreach (['medium','big','original'] as $k) {
+              if (!empty($img0[$k])) { $first_img = $img0[$k]; break 2; }
+          }
       }
   }
 
@@ -542,7 +503,8 @@ final class Propstack_Listings_Lite {
   $address = $arr['address'] ?? null;
   $city = $arr['city'] ?? '';
   $zip  = $arr['zip_code'] ?? '';
-  $short_address = trim(($arr['short_address'] ?? '') ?: ($city ?: ''));
+  // Die flache Liste liefert kein hide_address – daher niemals Straße/Hausnummer ausgeben.
+  $short_address = trim(trim((string) $zip) . ' ' . trim((string) $city));
 
   return [
       'id'              => $arr['id'] ?? null,
@@ -627,192 +589,8 @@ final class Propstack_Listings_Lite {
 	  ];
 	  return strtr($tpl, $repl);
 	}
-	private function get_unit($id) {
-    $o        = get_option(self::OPTION, []);
-    $endpoint = trim($o['endpoint'] ?? '');
-    $api_key  = trim($o['api_key'] ?? '');
-    if (!$endpoint || !$api_key) {
-        return new WP_Error('psl_config', 'Endpoint oder API-Key fehlt.');
-    }
-
-    $debug   = isset($_GET['psl_debug']) && current_user_can('manage_options');
-    $nocache = (
-        !empty($o['dev_no_cache']) ||
-        (isset($_GET['psl_nocache']) && current_user_can('manage_options')) ||
-        (defined('WP_DEBUG') && WP_DEBUG)
-    );
-
-    $ep = rtrim($endpoint, '/');
-
-    // Versuch 1: RESTful Detail-Endpoint .../units/{id}
-    $url1 = $ep . '/' . rawurlencode((string)$id);
-    // Fallback: Query-Variante (falls die API so arbeitet)
-    $url2 = $ep . (strpos($ep, '?') !== false ? '&' : '?') . 'id=' . rawurlencode((string)$id);
-
-    $headers = [
-        'X-API-KEY'   => $api_key,
-        'Accept'      => 'application/json',
-        'User-Agent'  => 'Propstack Listings Lite (WP); ' . home_url(),
-    ];
-    if ($nocache) {
-        $headers['Cache-Control'] = 'no-cache';
-        $headers['Pragma']        = 'no-cache';
-    }
-
-    $request = function($url) use ($headers) {
-        $res  = wp_remote_get($url, ['timeout'=>20, 'headers'=>$headers]);
-        $code = is_wp_error($res) ? 0 : (int) wp_remote_retrieve_response_code($res);
-        $body = is_wp_error($res) ? '' : (string) wp_remote_retrieve_body($res);
-        return [$res, $code, $body, $url];
-    };
-
-    // Cache-Key – zwei mögliche URLs berücksichtigen
-    $salt = (string) get_option(self::SALT_OPTION, '1');
-    $cache_key = self::CACHE_PREFIX . ':unit:' . $salt . ':' . md5($url1 . '|' . $url2);
-    if (!$nocache && ($cached = get_transient($cache_key))) return $cached;
-
-    // Versuch 1
-    [$res, $code, $body, $req_url] = $request($url1);
-
-    // Wenn 404/Fehler -> Versuch 2
-    if ($code === 404 || $code === 0 || $code >= 500) {
-        [$res, $code, $body, $req_url] = $request($url2);
-    }
-
-    if (is_wp_error($res) || $code < 200 || $code >= 300) {
-        $msg = 'HTTP ' . ($code ?: 'Error') . ' beim Detailabruf.';
-        if ($debug) $msg .= ' URL: ' . esc_url_raw($req_url);
-        return new WP_Error('psl_http', $msg);
-    }
-
-    $data = json_decode($body, true);
-    if (!is_array($data)) {
-        return new WP_Error('psl_json', 'Unerwartete Antwort (kein JSON).');
-    }
-
-    // Direktobjekt oder Wrapper
-    $rec = $data;
-    if (isset($data['data']) && is_array($data['data']))       $rec = $data['data'];
-    if (isset($data['results']) && is_array($data['results'])) $rec = $data['results'];
-    if (is_array($rec) && isset($rec[0])) $rec = $rec[0];
-
-    if (!is_array($rec)) {
-        return new WP_Error('psl_shape', 'Detail-Datensatz fehlt oder hat unerwartetes Format.');
-    }
-
-    $unit = $this->map_item($rec);
-
-    if (!$nocache) {
-        $ttl = max(60, (int)($o['cache_minutes'] ?? 15) * MINUTE_IN_SECONDS);
-        set_transient($cache_key, $unit, $ttl);
-    }
-
-    return $unit;
-}
-	public function psl_register_rewrite() {
-    // /immobilie/{slug}-{id}/
-    add_rewrite_rule(
-        '^immobilie/([^/]+)-([0-9]+)/?$',
-        'index.php?pagename=immobilie&psl_slug=$matches[1]&psl_detail=$matches[2]',
-        'top'
-    );
-
-    // Fallback: /immobilie/{id}/
-    add_rewrite_rule(
-        '^immobilie/([0-9]+)/?$',
-        'index.php?pagename=immobilie&psl_detail=$matches[1]',
-        'top'
-    );
-	}
-	public function psl_query_vars($vars) {
-		$vars[] = 'psl_detail';
-		$vars[] = 'ps_id';
-		$vars[] = 'ps_slug';
-		return $vars;
-	}
-	public function psl_detail_template($template) {
-		$id = get_query_var('psl_detail');
-		if (!$id) return $template;
-		$item = $this->fetch_single($id);
-		if (is_wp_error($item)) return $template;
-		$wanted = $this->slugify($item['title']['value'] ?? 'objekt');
-		$given  = get_query_var('psl_slug');
-		if ($given && $given !== $wanted) {
-			wp_redirect($this->build_detail_url(['id'=>$id,'title'=>$item['title']['value'] ?? 'objekt'], true), 301);
-			exit;
-		}
-		status_header(200);
-		nocache_headers();
-    // Theme-Header/Footer verwenden
-    get_header();
-    ?>
-    <main class="psl-detail">
-        <h1><?= esc_html($item['title']['value'] ?? 'Objekt') ?></h1>
-        <!-- deine Detailausgabe -->
-    </main>
-    <?php
-    get_footer();
-    exit;
-}
-	public function hook_canonical_detail_redirect() {
-		if (!is_page('immobilie')) return;
-
-		$id = get_query_var('psl_detail');
-		if (!$id) return;
-
-		$item = $this->fetch_single($id);
-		if (is_wp_error($item) || empty($item)) return;
-
-		$wanted = $this->slugify($item['title'] ?? 'objekt');
-		$given  = get_query_var('psl_slug');
-
-		if ($wanted && $given && $wanted !== $given) {
-			$url = home_url('/immobilie/' . $wanted . '-' . $id . '/');
-			wp_redirect($url, 301);
-			exit;
-		}
-	}
-	public function psl_bootstrap_detail() {
-		if (!is_page('immobilie')) return;
-		$id = get_query_var('psl_detail');
-		if (!$id && isset($_GET['ps_id'])) {
-			$id = sanitize_text_field($_GET['ps_id']);
-		}
-		if (!$id) return;
-		$item = $this->fetch_single($id);
-		if (is_wp_error($item) || empty($item)) return;
-		$this->current_item = $item;
-		add_filter('the_title', function($title, $post_id){
-			if ($post_id === get_queried_object_id() && !empty($this->current_item['title']['value'])) {
-				return $this->current_item['title']['value'];
-			}
-			return $title;
-		}, 10, 2);
-		add_filter('pre_get_document_title', function($t){
-			return !empty($this->current_item['title']['value']) ? $this->current_item['title']['value'] : $t;
-		}, 10, 1);
-		add_filter('document_title_parts', function($parts){
-			if (!empty($this->current_item['title']['value'])) {
-				$parts['title'] = $this->current_item['title']['value'];
-			}
-			return $parts;
-		}, 10, 1);
-		add_shortcode('psl_description', function($atts) {
-			$v = $this->current_item['description_note']['value'];
-			return $v;
-		});
-		add_filter('post_thumbnail_html', function(){
-			//return "http://dev.picaflor-immobilien.de/wp-content/uploads/2023/03/picaflor_headerlogo.png";
-        return '<img class="wp-post-image" src="http://dev.picaflor-immobilien.de/wp-content/uploads/2023/03/picaflor_headerlogo.png" alt="'.$alt.'">';
-		}, 10, 5);
-	}
-
 }
 
-register_activation_hook(__FILE__, function () {
-    //(new Propstack_Listings_Lite())->psl_register_rewrite();
-    flush_rewrite_rules();
-});
 register_deactivation_hook(__FILE__, function () {
     flush_rewrite_rules();
 });
