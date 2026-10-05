@@ -31,7 +31,8 @@ Siehe Statustabelle in `docs/README.md`. Phasen-Workflow: **Plan → Implementie
 - `Propstack-API.txt`, `.htaccess`, `.gitignore`
 - DB-Schema ohne Migration und Doku (`docs/database.md`)
 - Whitelist/Datenschutzlogik im Mapper ohne Tests und Doku (`docs/property-model.md`)
-- Git-Historie (kein Force-Push, kein Rebase)
+- Git-Historie (kein Force-Push, kein Rebase). Remote: `origin` = `https://github.com/vitaliy-shmidt/propstack-lite.git`, Branch `main`; nach abgeschlossener Phase Commit + `git push origin main` (vorher `git diff --cached` auf Secrets/Artefakte prüfen)
+- Prozesse: niemals globale `taskkill`/`killall`; nur selbst gestartete Prozesse per dokumentierter PID beenden
 
 ## Befehle
 
@@ -40,5 +41,6 @@ cd propstack-lite
 composer install                          # nur Dev-Abhängigkeiten (PHPUnit, WP-Stubs)
 vendor/bin/phpunit --testsuite unit        # ohne WordPress
 PSL_WP_LOAD=/pfad/zu/wp-load.php vendor/bin/phpunit --testsuite integration   # NUR Wegwerf-Instanz!
+PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpunit --testsuite http   # laufender Testserver nötig
 wp psl status | wp psl sync [--full|--id=N] | wp psl statuses | wp psl audit
 ```

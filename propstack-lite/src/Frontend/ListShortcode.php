@@ -3,6 +3,7 @@
 namespace PropstackLite\Frontend;
 
 use PropstackLite\Domain\Property;
+use PropstackLite\Routing\UrlGenerator;
 use PropstackLite\Settings;
 use PropstackLite\Storage\ListCriteria;
 use PropstackLite\Storage\PropertyStore;

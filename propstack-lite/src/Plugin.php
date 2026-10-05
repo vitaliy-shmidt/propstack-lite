@@ -7,11 +7,13 @@ use PropstackLite\Admin\SettingsPage;
 use PropstackLite\Api\Client;
 use PropstackLite\Api\UnitsEndpoint;
 use PropstackLite\Cli\Command;
+use PropstackLite\Frontend\DetailController;
 use PropstackLite\Frontend\ListShortcode;
 use PropstackLite\Frontend\TemplateLoader;
-use PropstackLite\Frontend\UrlGenerator;
 use PropstackLite\Mapping\PropertyMapper;
 use PropstackLite\Rest\WebhookController;
+use PropstackLite\Routing\Router;
+use PropstackLite\Routing\UrlGenerator;
 use PropstackLite\Storage\PropertyStore;
 use PropstackLite\Storage\Schema;
 use PropstackLite\Support\Clock;
@@ -20,6 +22,7 @@ use PropstackLite\Sync\Scheduler;
 use PropstackLite\Sync\SyncLock;
 use PropstackLite\Sync\SyncService;
 use PropstackLite\Sync\SyncState;
+use PropstackLite\Theme\AvadaAdapter;
 
 /** Verdrahtung und Hook-Registrierung. Dienste werden erst bei Bedarf erzeugt. */
 final class Plugin {
@@ -53,7 +56,23 @@ final class Plugin {
 		Scheduler::schedule(); // selbstheilend, falls Events fehlen (z. B. nach Migration)
 		( new WebhookController( $this->settings ) )->register( $runIncremental );
 
-		( new ListShortcode( PropertyStore::create(), $this->settings, new TemplateLoader(), new UrlGenerator() ) )->register();
+		$store     = PropertyStore::create();
+		$urls      = new UrlGenerator();
+		$templates = new TemplateLoader();
+
+		( new Router() )->register();
+		( new DetailController( $store, $this->settings, $urls, $templates, new Clock() ) )->register();
+		( new ListShortcode( $store, $this->settings, $templates, $urls ) )->register();
+
+		// Theme-Adapter erst nach dem Laden des Themes prüfen (Theme-Klassen existieren vorher nicht).
+		add_action(
+			'after_setup_theme',
+			static function (): void {
+				if ( AvadaAdapter::isActive() ) {
+					( new AvadaAdapter() )->register();
+				}
+			}
+		);
 
 		if ( is_admin() ) {
 			( new SettingsPage( $this->settings, $this ) )->register();
@@ -93,13 +112,18 @@ final class Plugin {
 		add_filter( 'cron_schedules', [ new Scheduler( new Settings() ), 'addSchedules' ] );
 		Scheduler::schedule();
 		Scheduler::scheduleFullSoon();
-		// Rewrite-Regeln der Version 0.2.x (/immobilie/…) entfernen.
+		// Erst Regeln registrieren, dann flushen (init ist bei der Aktivierung schon gelaufen).
+		Router::addRules();
 		flush_rewrite_rules();
+		update_option( Router::RULES_VERSION_OPTION, Router::RULES_VERSION, true );
 	}
 
 	public static function deactivate(): void {
 		WebhookController::unschedule();
 		( new SyncLock() )->release();
+		// Regeln aus dem laufenden Request entfernen, sonst schreibt der Flush sie erneut.
+		Router::removeRules();
 		flush_rewrite_rules();
+		delete_option( Router::RULES_VERSION_OPTION );
 	}
 }

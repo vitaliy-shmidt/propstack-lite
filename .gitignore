@@ -16,3 +16,8 @@ propstack-lite/.phpunit.cache/
 # Editor / OS
 .DS_Store
 Thumbs.db
+
+# Lokale IDE-/Workspace-Dateien
+*.code-workspace
+.vscode/
+.idea/

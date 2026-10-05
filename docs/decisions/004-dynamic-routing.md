@@ -1,6 +1,6 @@
 # Entscheidung 004: Dynamisches Routing `/immobilien/{slug}-{id}/`
 
-Status: angenommen (2026-10-05). URL-Erzeugung umgesetzt in Phase 1, Router folgt in Phase 2.
+Status: angenommen (2026-10-05). URL-Erzeugung umgesetzt in Phase 1, Router und Detailseiten umgesetzt in Phase 2 (ohne virtuelles `WP_Post`, siehe [routing-seo.md](../routing-seo.md)).
 
 ## Kontext
 

@@ -28,7 +28,7 @@ Ist ein Status sowohl „öffentlich“ als auch „verkauft“ gewählt, gewinn
 ### Verkauft/vermietet – 30-Tage-Logik
 
 - Datenebene (implementiert): `state = sold`, Objekt nicht mehr in öffentlichen Listen; jeder Sync-Lauf leert `data` bei `sold_at` älter als 30 Tage (`purged`), die Zeile bleibt.
-- Darstellung (**Geplant, Phase 2/3**): innerhalb von 30 Tagen HTTP 200 mit Hinweis „Verkauft“ (BUY) bzw. „Vermietet“ (RENT), `noindex,follow`, kein Formular, ähnliche Objekte; danach HTTP 410. Siehe [routing-seo.md](routing-seo.md).
+- Darstellung (implementiert in Phase 2, `Routing\RouteResolver`): innerhalb von 30 Tagen ab `sold_at` HTTP 200 mit Badge „Verkauft“ (BUY) bzw. „Vermietet“ (RENT), `noindex, follow`, kein Kontaktbereich, Hook für ähnliche Objekte (Inhalt folgt in Phase 3); danach HTTP 410 – unabhängig davon, ob der Sync die Daten schon geleert hat. Siehe [routing-seo.md](routing-seo.md).
 - „Reserviert“: Status muss öffentlich **und** als „Reserviert“ gewählt sein → bleibt `active`, Liste zeigt Badge.
 
 ## Schutzmechanismen

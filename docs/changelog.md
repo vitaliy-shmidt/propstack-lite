@@ -1,5 +1,33 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-05 – Phase 2: Routing und dynamische Detailseiten
+
+**Wichtigste Änderungen**
+- `Routing\Router`: Rewrite-Regeln `/immobilien/{slug}-{id}/` und Legacy `/immobilie/{slug}-{id}/`, Query-Vars `psl_property`/`psl_slug`/`psl_legacy`, Legacy `/immobilie/?ps_id=` über den `request`-Filter, kein Core-„Raten“ auf Legacy-Pfaden.
+- Rewrite-Lifecycle repariert: Regeln vor dem Flush registrieren (Aktivierung), aus dem laufenden Request entfernen (Deaktivierung), einmaliger Flush bei geänderter `RULES_VERSION`; kein Flush bei normalen Requests.
+- `Routing\RouteResolver` (rein): 200 aktiv/reserviert, 200 Verkauft-Phase (≤ 30 Tage ab `sold_at`), 410 entfernt/abgelaufen/nicht mehr öffentlich, 404 unbekannt.
+- `Frontend\DetailController`: 301-Kanonisierung (Slug, Trailing Slash, Schreibweise, Kurzform, Legacy; Kampagnenparameter bleiben erhalten), 404 über Theme, 410-Seite, `noindex, follow` (Meta + `X-Robots-Tag`), Canonical-Link, Dokumenttitel, Body-Klassen; keine wp_posts-Abfrage der Hauptquery; **kein virtuelles WP_Post**.
+- `Routing\UrlGenerator` (verschoben aus `Frontend\`): einzige URL-Quelle, absolut, Unterverzeichnis-fähig, Fallback ohne Pretty Permalinks.
+- `Frontend\PropertyViewModel`, Basis-Templates `single-property.php`, `property-gone.php`, Teile `parts/property-*.php` mit Theme-Override; `TemplateLoader::header()/footer()` für klassische und Block-Themes; CSS `assets/css/psl-detail.css`.
+- Hooks: `psl_before/after_property_content`, `psl_before/after_property`, `psl_property_contact`, `psl_property_similar`, Filter `psl_property_view_model`, `psl_property_template`, `psl_property_status_label`, `psl_detail_container_classes`, `psl_overview_url`.
+- `Theme\AvadaAdapter` (optional, minimal, **nicht gegen reale Avada-Installation verifiziert**).
+- Tests: Unit-Statusmatrix, HTTP-End-to-End-Suite (`tests/Http`) mit 22 Routing-Fällen, Datenschutz-/XSS-Prüfung im HTML und Request-Nachweis; Spy-mu-plugin für Testinstanzen.
+
+**Bugs behoben**
+- Legacy `?ps_id=` griff nicht, wenn die alte Seite `immobilie` nicht existiert (WordPress wertet den Pfad dann als Beitrag) → Erkennung über den angefragten Pfad.
+- WordPress leitete `/immobilie/` ohne gültige ID per „Raten“ auf `/immobilien/` um → jetzt echtes 404.
+- Detail-CSS: Theme-Einrückungen in Eckdaten, Wortumbruch langer Titel.
+- Aus dem Audit: falsches Canonical (alle Objekte → `/immobilie/`), Soft-404, wirkungsloser Slug-Redirect, Rewrite-Flush ohne registrierte Regeln.
+
+**Neue Dateien:** `src/Routing/{Router,UrlGenerator,RouteResolver,RouteDecision}.php`, `src/Frontend/{DetailController,PropertyViewModel}.php`, `src/Theme/AvadaAdapter.php`, `templates/single-property.php`, `templates/property-gone.php`, `templates/parts/property-{header,facts,description,agent,sold-notice}.php`, `assets/css/psl-detail.css`, `tests/Unit/RouteResolverTest.php`, `tests/Http/DetailRoutingTest.php`, `tests/Support/mu-plugins/psl-http-spy.php`.
+**Entfernt:** `src/Frontend/UrlGenerator.php` (→ `Routing\UrlGenerator`). `picaflor.code-workspace` wird nicht mehr versioniert (lokale IDE-Datei).
+
+**DB-Migrationen:** keine Schemaänderung. Neue Option `psl_rewrite_version`.
+
+**Breaking Changes:** Klasse `Frontend\UrlGenerator` → `Routing\UrlGenerator` (intern). `TemplateLoader` hat neue Methoden `header()`/`footer()`.
+
+**Offene Punkte:** reale Testumgebung mit Avada/SEO-Plugin/CF7; Yoast/Rank-Math-Abstimmung (Phase 5); ähnliche Immobilien und vollständige Objektseite (Phase 3); Kontaktformular (Phase 4).
+
 ## 2026-10-05 – Phase 1: API-Client, Whitelist-Mapper, PropertyStore, Sync (Plugin 0.3.0)
 
 **Wichtigste Änderungen**

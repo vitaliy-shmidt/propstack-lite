@@ -57,6 +57,7 @@ Zeilen werden nie gelöscht, damit ehemals öffentliche IDs später mit HTTP 410
 | `psl_db_version` | ja | Schema-Version |
 | `psl_sync_state` | nein | letzte Läufe, Cursor, letzter Fehler, letztes Ergebnis |
 | `psl_sync_lock` | nein | Lock-Ablaufzeitpunkt (Unix-Zeit), nur während eines Laufs |
+| `psl_rewrite_version` | ja | Version der Rewrite-Regeln (Phase 2); Abweichung → einmaliger Flush. Wird bei Deaktivierung/Deinstallation gelöscht |
 | Transient `psl_property_statuses` | – | Statusliste für die Einstellungsseite (1 h) |
 
 ## Migrationen

@@ -29,8 +29,12 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 
 ## Ausgabe
 
-- Alle Template-Ausgaben mit `esc_html`/`esc_attr`/`esc_url`/`tag_escape` – **umgesetzt**.
-- Rich Text: beim Speichern `wp_kses_post`, bei der Ausgabe erneut escapen bzw. `wp_kses_post` (Detailseite, Phase 3).
+- Alle Template-Ausgaben mit `esc_html`/`esc_attr`/`esc_url`/`tag_escape` – **umgesetzt** (Liste und Detailseite).
+- Rich Text: beim Speichern `wp_kses_post`, bei der Ausgabe erneut `wp_kses_post( wpautop() )` – **umgesetzt (Detailseite)**.
+- Templates erhalten nur das ViewModel aus dem gewhitelisteten Modell; `publicExposeUrl`, `unitId` u. Ä. sind nicht enthalten – **umgesetzt, getestet**.
+- XSS-Tests mit `<script>alert(1)</script>` in Titel, Beschreibung, Maklername, Bildtitel – über den Mapper **und** direkt im Store (am Mapper vorbei) – erzeugen keinen ausführbaren Code; `javascript:`-URLs werden von `esc_url` verworfen – **getestet (HTTP-Suite)**.
+- Detailseiten: unbekannte IDs → 404 ohne API-Request; Weiterleitungen nur auf eigene URLs (`wp_safe_redirect`), Query-Parameter werden kodiert übernommen, interne Parameter entfernt – **umgesetzt**.
+- Kontaktdaten des Maklers werden in der Verkauft-Phase nicht angezeigt.
 - Fehlerdetails nie öffentlich: Besucher sehen generische Meldungen; Details nur im Admin (Sync-Status) und im Debug-Log – **umgesetzt**.
 
 ## Eingaben, Berechtigungen, Nonces

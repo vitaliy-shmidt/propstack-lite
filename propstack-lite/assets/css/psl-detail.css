@@ -1,0 +1,184 @@
+/* Propstack Listings Lite – Detailseite (Basis). Nur Layout; Typografie/Farben erbt das Theme. */
+.psl-detail-wrap {
+	--psl-gap: 24px;
+	--psl-radius: 12px;
+	--psl-border: rgba(0, 0, 0, 0.12);
+	--psl-muted: rgba(0, 0, 0, 0.65);
+	--psl-badge-bg: rgba(0, 0, 0, 0.06);
+	--psl-reserved-bg: #b45309;
+	--psl-sold-bg: #991b1b;
+	--psl-badge-fg: #fff;
+	box-sizing: border-box;
+	max-width: 1100px;
+	margin: 0 auto;
+	padding: 24px 16px 48px;
+}
+
+/* Theme stellt eigene Container bereit (z. B. Avada-Adapter): keine zusätzliche Begrenzung. */
+.psl-detail-wrap--theme-container {
+	max-width: none;
+	padding-left: 0;
+	padding-right: 0;
+}
+
+.psl-detail-wrap *,
+.psl-detail-wrap *::before,
+.psl-detail-wrap *::after {
+	box-sizing: inherit;
+}
+
+.psl-detail {
+	display: flex;
+	flex-direction: column;
+	gap: var(--psl-gap);
+}
+
+.psl-detail__badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0 0 8px;
+}
+
+.psl-detail .psl-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: var(--psl-badge-bg);
+	font-size: 0.85em;
+}
+
+.psl-detail .psl-badge--reserved {
+	background: var(--psl-reserved-bg);
+	color: var(--psl-badge-fg);
+}
+
+.psl-detail .psl-badge--sold {
+	background: var(--psl-sold-bg);
+	color: var(--psl-badge-fg);
+	font-weight: 700;
+}
+
+.psl-detail__title {
+	margin: 0;
+	line-height: 1.2;
+	overflow-wrap: break-word;
+	hyphens: auto;
+}
+
+.psl-detail__location {
+	margin: 6px 0 0;
+	color: var(--psl-muted);
+}
+
+.psl-detail__media {
+	position: relative;
+	margin: 0;
+	overflow: hidden;
+	border-radius: var(--psl-radius);
+	background: var(--psl-badge-bg);
+	aspect-ratio: 4 / 3;
+}
+
+.psl-detail__image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.psl-detail__image-count {
+	position: absolute;
+	right: 12px;
+	bottom: 12px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: rgba(0, 0, 0, 0.6);
+	color: #fff;
+	font-size: 0.85em;
+}
+
+.psl-facts {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 12px;
+	margin: 0;
+}
+
+.psl-facts__item {
+	padding: 12px 16px;
+	border: 1px solid var(--psl-border);
+	border-radius: var(--psl-radius);
+}
+
+/* Theme-Stile für dl/dt/dd (Einrückungen) gezielt neutralisieren. */
+.psl-detail-wrap .psl-facts dt {
+	margin: 0;
+	padding: 0;
+	color: var(--psl-muted);
+	font-size: 0.9em;
+}
+
+.psl-detail-wrap .psl-facts dd {
+	margin: 4px 0 0;
+	padding: 0;
+	font-size: 1.25em;
+	font-weight: 600;
+}
+
+.psl-detail__section h2 {
+	margin: 0 0 12px;
+}
+
+.psl-detail__notice {
+	padding: 16px 20px;
+	border-left: 4px solid var(--psl-sold-bg);
+	border-radius: 4px;
+	background: var(--psl-badge-bg);
+}
+
+.psl-detail__notice p {
+	margin: 0 0 8px;
+}
+
+.psl-agent {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: center;
+}
+
+.psl-agent__photo {
+	width: 96px;
+	height: 96px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.psl-agent__body p {
+	margin: 0 0 4px;
+}
+
+.psl-agent__name {
+	font-weight: 600;
+}
+
+.psl-button {
+	display: inline-block;
+	padding: 10px 16px;
+	border: 1px solid currentColor;
+	border-radius: 8px;
+	text-decoration: none;
+}
+
+.psl-button:focus-visible,
+.psl-detail a:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+@media (min-width: 900px) {
+	.psl-detail__media {
+		aspect-ratio: 16 / 9;
+	}
+}

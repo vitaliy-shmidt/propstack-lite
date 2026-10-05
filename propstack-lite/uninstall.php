@@ -10,7 +10,7 @@ global $wpdb;
 
 $wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}psl_properties" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-foreach ( [ 'propstack_lite_settings', 'psl_db_version', 'psl_sync_state', 'psl_sync_lock', 'propstack_lite_cache_salt' ] as $option ) {
+foreach ( [ 'propstack_lite_settings', 'psl_db_version', 'psl_sync_state', 'psl_sync_lock', 'psl_rewrite_version', 'propstack_lite_cache_salt' ] as $option ) {
 	delete_option( $option );
 }
 
