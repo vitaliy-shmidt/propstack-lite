@@ -6,7 +6,7 @@
 | Phase 1 – API + Store + Sync | abgeschlossen (2026-10-05) |
 | Phase 2 – Routing | abgeschlossen (2026-10-05) |
 | Phase 3 – Detailseite | abgeschlossen (2026-10-05) |
-| Phase 4 – Leads | geplant |
+| Phase 4 – Leads | abgeschlossen (2026-10-05) |
 | Phase 5 – SEO | geplant |
 | Phase 6 – Tracking | geplant |
 | Phase 7 – Filter/UX | geplant |
@@ -33,7 +33,7 @@ Besucher ──► [propstack_list] ──────────────�
 
 Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [architecture.md](architecture.md).
 
-## Aktueller Entwicklungsstand (nach Phase 3)
+## Aktueller Entwicklungsstand (nach Phase 4)
 
 **Implementiert:**
 - API-Client (nur lesend), Whitelist-Mapper, einheitliches `Property`-Modell, Tabelle `{prefix}psl_properties`
@@ -42,7 +42,9 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 - **Vollständige Detailseite:** Breadcrumb, Hero mit Galerie und Kurzfakten, Eckdaten (Kosten, Flächen, Zustand), Beschreibung, Ausstattung mit Merkmalsliste, Lage, Energie, Grundrisse, Sonstiges/Provision, Ansprechpartner, Kontaktbereich (Einhängepunkt), Hook für ähnliche Immobilien; responsive Bildergalerie mit Lightbox (Vanilla JS, `<dialog>`); alles modular und im Theme überschreibbar ([frontend.md](frontend.md))
 - Optionaler Avada-Adapter (nicht gegen reales Avada verifiziert)
 
-**Noch nicht implementiert:** Kontaktformular/Leads (Phase 4), Meta Description/OG/JSON-LD/BreadcrumbList/Sitemap/SEO-Plugin-Adapter (Phase 5), Tracking (Phase 6), ähnliche Immobilien, Filter-UI/Pagination (Phase 7).
+- **Immobilienanfragen:** Contact-Form-7-Formular auf anfragbaren Detailseiten, serverseitige Property-Verifikation, Propstack-Mailblock `ps-kontaktanfrage` an die konfigurierte Propstack-Adresse, Rate-Limit, Honeypot, Lead-ID, Admin-Status ([leads.md](leads.md)). Echter Propstack-E2E-Test steht noch aus (nur nach Freigabe).
+
+**Noch nicht implementiert:** Meta Description/OG/JSON-LD/BreadcrumbList/Sitemap/SEO-Plugin-Adapter (Phase 5), Tracking (Phase 6), ähnliche Immobilien, Filter-UI/Pagination (Phase 7).
 
 ## Dokumente
 
@@ -55,7 +57,7 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 | [sync.md](sync.md) | Sync-Arten, Statuslogik, Cron, CLI, Diagnose |
 | [routing-seo.md](routing-seo.md) | URLs, Rewrite-Regeln, Statusmatrix, SEO-Basis und -Planung |
 | [frontend.md](frontend.md) | Detailseite: Template-Teile, ViewModel, Formatter, Galerie/Lightbox, Bildfilter, Energie, Ansprechpartner, Hooks, Overrides |
-| [leads.md](leads.md) | CF7 → Propstack-Mailintegration (geplant) |
+| [leads.md](leads.md) | Immobilienanfragen: CF7 → Propstack-Mail, Feldzuordnung, Mailformat, Sicherheit, E2E-Anleitung |
 | [tracking.md](tracking.md) | UTM/GCLID, Consent, dataLayer (geplant) |
 | [avada.md](avada.md) | Theme-Integration (Adapter nicht gegen reales Avada verifiziert) |
 | [security.md](security.md) | verbindliche Sicherheitsregeln |

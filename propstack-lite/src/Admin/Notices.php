@@ -30,6 +30,9 @@ final class Notices {
 		if ( [] === $this->settings->publicStatusIds() ) {
 			$messages[] = [ 'warning', 'Propstack Lite: Es sind keine öffentlichen Propstack-Status ausgewählt – auf der Website erscheinen keine Immobilien.' ];
 		}
+		if ( ! \PropstackLite\Leads\Cf7Integration::isAvailable() ) {
+			$messages[] = [ 'warning', 'Contact Form 7 ist nicht aktiv. Immobilienanfragen sind derzeit deaktiviert.' ];
+		}
 		$state = new SyncState();
 		if ( $state->hasUnresolvedError() ) {
 			$messages[] = [ 'error', 'Propstack Lite: Der letzte Sync ist fehlgeschlagen – ' . ( $state->get()['last_error'] ?? '' ) ];

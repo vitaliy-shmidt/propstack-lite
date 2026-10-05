@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: nach Phase 3 (Plugin-Version 0.3.0). Geplante Teile sind als **Geplant** markiert.
+Stand: nach Phase 4 (Plugin-Version 0.3.0). Geplante Teile sind als **Geplant** markiert.
 
 ## Grundprinzipien
 
@@ -87,9 +87,19 @@ Besucher ─► /immobilien/{slug}-{id}/ ─► Routing\Router (Rewrite, Query-V
 - Laufzeit: WordPress ≥ 6.0, PHP ≥ 8.1. **Keine** Composer-Laufzeitabhängigkeiten (eigener Autoloader).
 - Dev: PHPUnit 10, `php-stubs/wordpress-stubs` (siehe `composer.json`). `vendor/` wird nicht ausgeliefert.
 
-## Lead-Architektur – **Geplant (Phase 4)**
+## Lead-Architektur – implementiert (Phase 4)
 
-Contact Form 7 → serverseitige Anreicherung aus dem Store → HTML-Mail im Propstack-Format `ps-kontaktanfrage` → Propstack-Automatisierung „Neue Portalanfrage“. Abstraktion über `LeadSink` (`Cf7MailLeadSink`, später optional `PropstackApiLeadSink`). Einhängepunkt auf der Detailseite: Action `psl_property_contact` (nur bei verfügbaren Objekten). Details: [leads.md](leads.md).
+Contact Form 7 (nur wenn aktiv) rendert, validiert und versendet; Propstack Lite ergänzt nur für das konfigurierte Formular: Hidden Fields (`psl_property_id`, `psl_lead_id`), Honeypot, in `wpcf7_before_send_mail` Rate-Limit, Verifikation der Property gegen den Store (`LeadContextFactory` + `RouteResolver`), dann `Cf7MailLeadSink` (Empfänger = Propstack-Adresse aus den Einstellungen, HTML, Spezial-Mail-Tag `[_psl_propstack_block]` mit dem Block aus `InquiryMailFormatter`). Abstraktion `LeadSink` für eine spätere API-Variante. Keine Propstack-API-Schreibzugriffe, kein eigenes Lead-Archiv. Details: [leads.md](leads.md).
+
+| Klasse | Verantwortung |
+|---|---|
+| `Leads\Cf7Integration` | CF7-Hooks (früher Formular-ID-Check), Rendering über `psl_property_contact`, Status-Logging, Action `psl_lead_sent` |
+| `Leads\LeadContextFactory` | Property-ID normalisieren, im Store verifizieren (anfragbar?), Formularwerte normalisieren, Zustimmung prüfen |
+| `Leads\LeadContext`, `LeadData` | unveränderlicher Anfragekontext / normalisierte Formulardaten |
+| `Leads\InquiryMailFormatter` | HTML-Block `ps-kontaktanfrage` (escaped, unit-testbar) |
+| `Leads\LeadSink`, `Cf7MailLeadSink` | Ausgabekanal; V1: CF7-Mail-Properties pro Anfrage im Speicher |
+| `Leads\RateLimiter` | 5 Anfragen / 10 min je HMAC-gehashter Client-IP (Transient) |
+| `Leads\LeadSetupCheck` | Konfigurationsprüfung für die Einstellungsseite |
 
 ## SEO-Architektur – Basis implementiert (Phase 2), Ausbau **Geplant (Phase 5)**
 

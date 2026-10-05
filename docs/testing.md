@@ -30,7 +30,8 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 - `DISABLE_WP_CRON = true`, damit kein Cron-Sync Testdaten verändert.
 - Plugin per Junction eingebunden; API-Key zur Laufzeit aus `Propstack-API.txt` als `PSL_API_KEY` (Datei wird nicht kopiert).
 - mu-plugin `tests/Support/mu-plugins/psl-http-spy.php` (nur Testinstanz) protokolliert alle ausgehenden HTTP-Requests mit Kontext (`web`/`cron`/`cli`).
-- mu-plugin `tests/Support/mu-plugins/psl-test-hooks.php` (nur Testinstanz): optionaler Filter für das Status-Label (Option `psl_test_status_label`), um Escaping von Filter-Ausgaben zu testen.
+- mu-plugin `tests/Support/mu-plugins/psl-test-hooks.php` (nur Testinstanz): optionaler Filter für das Status-Label (Option `psl_test_status_label`), um Escaping von Filter-Ausgaben zu testen; Mail-Capture (Option `psl_test_mail_capture` → Mails nach `wp-content/psl-mail-capture.jsonl`, kein Versand) und simulierter Mailfehler (Option `psl_test_mail_fail`).
+- Contact Form 7 6.1.7 in der Testinstanz installiert; `InquiryTest` legt eigene Testformulare an und löscht sie wieder.
 - Testserver nur über die selbst dokumentierte PID beenden – keine globalen `taskkill`-Befehle.
 
 ## Fixtures
@@ -48,6 +49,15 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 - StateResolver: 19 Zustandskombinationen
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
+
+## Ergebnisse Phase 4 (2026-10-05)
+
+- Unit: 107 Tests, 416 Assertions – grün (neu: `LeadTest` – Lead-Kontext mit manipulierten/unbekannten/nicht anfragbaren IDs, Zustimmung, Header-Injection; Mailformatter mit allen/optionalen Feldern, Sonderzeichen, XSS, internen Feldern, Custom Fields; Rate-Limiter mit Fenster, Clients, ohne Klartext-IP).
+- Integration: 16 Tests, 66 Assertions – grün.
+- HTTP: 31 Tests, 326 Assertions – grün (neu: `InquiryTest` mit **echtem Contact Form 7 6.1.7** über den CF7-REST-Feedback-Endpunkt; Mail-Capture über `pre_wp_mail`, nichts wird versendet): Formular nur auf aktiv/reserviert; gültige Anfrage → Propstack-Mail (Empfänger, HTML, `Reply-To`, alle Felder, `property_id`, URL); reserviert erlaubt; manipulierte IDs (verkauft, entfernt, nicht öffentlich, unbekannt, ungültig) abgelehnt ohne Mail; gefälschte Titel/URL ignoriert; fremdes CF7-Formular unverändert (Empfänger, kein Block, Honeypot ignoriert); Rate-Limit (6. Anfrage abgelehnt, keine Klartext-IP); fehlende Zieladresse → kein Formular, POST abgelehnt; Zustimmung fehlt → CF7 `acceptance_missing`; Honeypot → `spam`; XSS/Header-Injection; Lead-ID-Custom-Field und serverseitige Eindeutigkeit; Mailfehler → `mail_failed`; keine Anfrageinhalte in der DB; Logs ohne PII; 0 Propstack-Requests; Seite ohne CF7 rendert ohne Fehler.
+- Browser (Edge, synthetische Daten): Formular auf Desktop/390 px ohne Überlauf; CTA springt zu `#psl-contact` und setzt den Fokus; Honeypot unsichtbar; echte Absendung im Browser → CF7-Event `wpcf7mailsent` mit `mail_sent`, abgefangene Mail mit vollständigem `ps-kontaktanfrage`-Block.
+- Hinweis Testumgebung: CF7 wertet Anfragen ohne User-Agent als Spam – der Test-HTTP-Client sendet daher einen Browser-User-Agent.
+- **Nicht durchgeführt:** echter E2E-Test mit dem Propstack-Postfach (schreibender CRM-Vorgang, Anleitung in [leads.md](leads.md)).
 
 ## Ergebnisse Phase 3 (2026-10-05)
 

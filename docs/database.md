@@ -57,6 +57,9 @@ Zeilen werden nie gelöscht, damit ehemals öffentliche IDs später mit HTTP 410
 | `psl_db_version` | ja | Schema-Version |
 | `psl_sync_state` | nein | letzte Läufe, Cursor, letzter Fehler, letztes Ergebnis |
 | `psl_sync_lock` | nein | Lock-Ablaufzeitpunkt (Unix-Zeit), nur während eines Laufs |
+| Einstellungen Phase 4 in `propstack_lite_settings` | – | `cf7_form_id`, `inquiry_email`, `inquiry_bcc`, `field_map`, `cf_map` (keine Lead-Inhalte) |
+| Transient `psl_rl_{hmac}` | – | Rate-Limit-Zähler je gehashtem Client (10 min), keine Klartext-IP |
+| Transient `psl_lead_used_{uuid}` | – | bereits verwendete Lead-IDs (1 Tag) |
 | `psl_rewrite_version` | ja | Version der Rewrite-Regeln (Phase 2); Abweichung → einmaliger Flush. Wird bei Deaktivierung/Deinstallation gelöscht |
 | Transient `psl_property_statuses` | – | Statusliste für die Einstellungsseite (1 h) |
 

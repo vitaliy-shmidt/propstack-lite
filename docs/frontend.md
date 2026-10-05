@@ -31,7 +31,7 @@ PropertyStore::find() → RouteResolver (200/404/410) → PropertyViewModel::bui
 | 10 | `property-floorplans.php` | Grundrisse (eigene Lightbox-Gruppe) | mind. ein öffentlicher Grundriss |
 | 11 | `property-other.php` | Sonstige Angaben, Provisionshinweis | `other_note` oder `courtage_note` |
 | 12 | `property-agent.php` | Ansprechpartner (Kontaktdaten nur bei verfügbaren Objekten) | öffentlicher Makler oder Fallback-Filter |
-| 13 | `property-contact.php` | „Interesse an dieser Immobilie?“ + Hook `psl_property_contact` | aktiv/reserviert |
+| 13 | `property-contact.php` | „Interesse an dieser Immobilie?“, Objektkontext; mit verfügbarem Formular Hook `psl_property_contact` (CF7-Formular, Phase 4), sonst neutraler Kontakthinweis | aktiv/reserviert |
 | – | Hook `psl_property_similar` | Einhängepunkt „Ähnliche Immobilien“ (keine sichtbare Überschrift ohne Inhalt) | immer, nach dem Artikel |
 | – | `lightbox.php` | `<dialog>` der Lightbox | Bilder oder Grundrisse vorhanden |
 
@@ -87,7 +87,8 @@ Nur öffentliche Propstack-Felder (`name` inkl. akademischem Titel, `position`, 
 |---|---|---|
 | `psl_before_property_content` / `psl_after_property_content` | Action | Theme-Wrapper (z. B. Avada) |
 | `psl_before_property` / `psl_after_property` | Action | innerhalb des Artikels |
-| `psl_property_contact` | Action | Kontaktformular (Phase 4), im Abschnitt `#psl-contact` |
+| `psl_property_contact` | Action | Anfrageformular im Abschnitt `#psl-contact` (Phase 4: Contact Form 7, nur wenn verfügbar) |
+| `psl_inquiry_form_available` | Filter | Ist ein Anfrageformular verfügbar? (setzt `$view['contact']['formAvailable']`) |
 | `psl_property_similar` | Action | ähnliche Immobilien (alle 200-Zustände und 410-Seite) |
 | `psl_property_view_model` | Filter | ViewModel anpassen |
 | `psl_property_template` | Filter | Template-Pfad |
@@ -100,6 +101,8 @@ Nur öffentliche Propstack-Felder (`name` inkl. akademischem Titel, `position`, 
 ## CSS
 
 `assets/css/psl-detail.css` (ca. 11 KB), nur auf Detailseiten. Ausschließlich `.psl-*`-Selektoren bzw. `.psl-detail-wrap …`, keine globalen Element-Regeln (einzige Ausnahme: `html.psl-lightbox-open` sperrt das Scrollen bei offener Lightbox). Layout: Hero-Grid (Galerie 2/3 + Kurzfakten 1/3 ab 1024 px, darunter gestapelt), Vorschauleiste mit Scroll-Snap (4 bzw. 6 sichtbar), Faktengruppen im Auto-Fit-Grid. Typografie, Grundfarben und Buttonstil kommen vom Theme. **Bewusste Ausnahme:** unter 600 px wird die H1-Größe auf `clamp(1.75rem, 8vw, 2.5rem)` begrenzt, weil sehr große Theme-H1 lange deutsche Wörter sonst mitten im Wort umbrechen.
+
+**Kontaktbereich (Phase 4):** Sprungziel `#psl-contact` mit `tabindex="-1"` (Fokus nach Klick auf „Anfrage senden“) und `scroll-margin-top: var(--psl-scroll-offset, 24px)` – Themes mit fixem Header setzen z. B. `:root { --psl-scroll-offset: 120px; }` (theme-neutral, ohne JavaScript; für Avada **noch nicht gegen reale Installation verifiziert**). Das CF7-Formular wird nicht vom Plugin gestaltet (nur Abstand `.psl-contact__form`); Honeypot `.psl-hp` ist visuell und für Screenreader verborgen.
 
 ## Theme-Overrides – Beispiel
 

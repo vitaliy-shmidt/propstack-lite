@@ -1,5 +1,26 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-05 – Phase 4: Immobilienanfragen über Contact Form 7 → Propstack
+
+**Wichtigste Änderungen**
+- Neue Lead-Schicht `src/Leads/`: `Cf7Integration`, `LeadContextFactory`, `LeadContext`, `LeadData`, `InquiryMailFormatter`, `RateLimiter`, `LeadSink` + `Cf7MailLeadSink`, `LeadSetupCheck`, `LeadException`.
+- CF7-Formular auf anfragbaren Detailseiten (aktiv/reserviert) über den Hook `psl_property_contact`; nur geladen, wenn CF7 aktiv ist; nur das konfigurierte Formular wird verarbeitet.
+- Serverseitige Property-Verifikation gegen den Store, Objektdaten nie aus dem Browser; Propstack-Mailblock `ps-kontaktanfrage` per Spezial-Mail-Tag `[_psl_propstack_block]`; Empfänger/HTML/BCC pro Anfrage im Speicher gesetzt.
+- Lead-ID (UUID v4) mit serverseitiger Eindeutigkeit; optionale `client_cf_*`-Zuordnung (Standard: aus).
+- Rate-Limit 5/10 min (HMAC-gehashte IP, Transient), Honeypot, neutrale Besuchermeldungen, Logging nur Lead-ID/Property-ID/Status/Code.
+- Einstellungen: Formular, Propstack-Adresse, BCC, Feldzuordnung, Custom-Field-Zuordnung; Status-Box „Immobilienanfragen“; Admin-Hinweis bei fehlendem CF7.
+- Kontaktbereich: Formular oder neutraler Hinweis; `--psl-scroll-offset` für fixe Header; Filter `psl_inquiry_form_available`, Action `psl_lead_sent`.
+
+**Bugs behoben:** keine aus Vorphasen; während der Phase keine Plugin-Fehler gefunden (CF7-Spam bei Tests ohne User-Agent war erwartetes CF7-Verhalten).
+
+**Neue Dateien:** `src/Leads/*.php` (10), `tests/Unit/LeadTest.php`, `tests/Http/InquiryTest.php`; erweitert: `tests/Support/mu-plugins/psl-test-hooks.php`.
+
+**DB-Migrationen:** keine Schemaänderung; neue Einstellungsschlüssel in `propstack_lite_settings`, Transients `psl_rl_*`, `psl_lead_used_*` (werden von `uninstall.php` über das Präfix `psl_` entfernt).
+
+**Breaking Changes:** keine. `property-contact.php` zeigt ohne verfügbares Formular jetzt einen neutralen Kontakthinweis.
+
+**Offene Punkte:** echter Propstack-E2E-Test (nur nach Freigabe), Propstack-Konfiguration (Postfach, Automatisierung, Quelle, Custom Fields), Produktions-Mailtransport (SMTP/SPF/DKIM/DMARC), Avada-Verifikation.
+
 ## 2026-10-05 – Phase 3: Vollständige Immobilien-Detailseite
 
 **Wichtigste Änderungen**

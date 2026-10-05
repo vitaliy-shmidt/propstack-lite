@@ -50,9 +50,16 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 - REST: Prüfung im `permission_callback`, nur POST – **umgesetzt**.
 - Direkter Dateiaufruf: Templates/Bootstrap mit `ABSPATH`-Guard; Klassen-Dateien enthalten nur Deklarationen.
 
-## Formulare (Geplant, Phase 4)
+## Formulare / Leads (Phase 4, umgesetzt)
 
-Nonce/CF7-Mechanismen, serverseitige Validierung, Objektdaten nur aus dem Store, Honeypot, Rate-Limit pro gehashter IP, keine PII in Logs.
+- Nur das konfigurierte CF7-Formular wird verarbeitet; andere Formulare bleiben unverändert – **getestet**.
+- Property-Zuordnung nie allein über das Hidden Field: Ziffern-Prüfung → `PropertyStore` → `RouteResolver` (nur aktiv/reserviert); Titel/URL/Objektdaten nur aus dem Store – **getestet** (manipulierte IDs: verkauft, entfernt, nicht öffentlich, unbekannt, nicht numerisch).
+- Header-Injection: Empfänger/BCC nur aus validierten Einstellungen; Zeilenumbrüche in einzeiligen Feldern entfernt; E-Mail-Validierung durch CF7 und Plugin – **getestet**.
+- XSS: alle Werte im Mailblock HTML-escaped; CF7-Spezialtags in Eingaben werden nicht ausgewertet – **getestet**.
+- Spam: CF7-Prüfungen + Honeypot `psl_hp_website`; Rate-Limit 5/10 min je HMAC(IP, `wp_salt`) als kurzlebiger Transient, keine Klartext-IP, keine ungeprüften Proxy-Header – **getestet**.
+- Fehler: Besucher sehen nur eine neutrale Meldung; Logs nur Lead-ID, Property-ID, Status, Code – **getestet** (keine Namen/E-Mail/Telefon/Nachricht/IP).
+- Kein Lead-Archiv im Plugin – **getestet** (keine Anfrageinhalte in Optionen/Posts/Postmeta).
+- Propstack-Empfangsadresse nie im Frontend/JavaScript.
 
 ## Tracking (Geplant, Phase 6)
 

@@ -22,7 +22,30 @@ final class Settings {
 		'reserved_status_ids' => [],
 		'sync_interval'       => 15,
 		'webhook_token'       => '',
+		// Phase 4: Immobilienanfragen (Contact Form 7 → Propstack-Mail)
+		'cf7_form_id'         => 0,
+		'inquiry_email'       => '',
+		'inquiry_bcc'         => '',
+		'field_map'           => self::DEFAULT_FIELD_MAP,
+		'cf_map'              => [],
 	];
+
+	/** Formularfelder (intern) → erwartete CF7-Feldnamen (im Admin änderbar). */
+	public const DEFAULT_FIELD_MAP = [
+		'salutation' => '',
+		'first_name' => 'your-first-name',
+		'last_name'  => 'your-last-name',
+		'email'      => 'your-email',
+		'phone'      => 'your-phone',
+		'message'    => 'your-message',
+		'consent'    => 'psl-consent',
+	];
+
+	/** Pflichtfelder der Feldzuordnung (Anrede ist optional). */
+	public const REQUIRED_FIELDS = [ 'first_name', 'last_name', 'email', 'phone', 'message', 'consent' ];
+
+	/** Werte, die später als Propstack-Custom-Fields (client_cf_*) übertragen werden können. */
+	public const ATTRIBUTION_KEYS = [ 'lead_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'gbraid', 'wbraid' ];
 
 	/** Einstellungen aus Version 0.2.x, die bei der Migration entfernt werden. */
 	private const LEGACY_KEYS = [ 'endpoint', 'query_params', 'cache_minutes', 'detail_url_template', 'dev_no_cache' ];
@@ -79,6 +102,29 @@ final class Settings {
 		return (string) $this->all()['webhook_token'];
 	}
 
+	public function cf7FormId(): int {
+		return max( 0, (int) $this->all()['cf7_form_id'] );
+	}
+
+	/** Propstack-Empfangsadresse (validiert gespeichert). */
+	public function inquiryEmail(): string {
+		return (string) $this->all()['inquiry_email'];
+	}
+
+	public function inquiryBcc(): string {
+		return (string) $this->all()['inquiry_bcc'];
+	}
+
+	/** @return array<string, string> interner Feldname => CF7-Feldname */
+	public function fieldMap(): array {
+		return self::cleanFieldMap( $this->all()['field_map'] );
+	}
+
+	/** @return array<string, string> Attributionsschlüssel => Propstack-Custom-Field-Name (ohne Präfix client_cf_) */
+	public function customFieldMap(): array {
+		return self::cleanCustomFieldMap( $this->all()['cf_map'] );
+	}
+
 	/**
 	 * sanitize_callback der Settings API.
 	 * Ein leeres API-Key-Feld behält den gespeicherten Key (Passwortfeld wird nie vorbefüllt).
@@ -106,10 +152,58 @@ final class Settings {
 			'reserved_status_ids' => self::intList( $input['reserved_status_ids'] ?? [] ),
 			'sync_interval'       => self::clampInterval( $input['sync_interval'] ?? self::DEFAULTS['sync_interval'] ),
 			'webhook_token'       => $token,
+			'cf7_form_id'         => self::cleanFormId( $input['cf7_form_id'] ?? 0 ),
+			'inquiry_email'       => self::cleanEmail( $input['inquiry_email'] ?? '', 'inquiry_email', 'Propstack-Anfrage-E-Mail-Adresse' ),
+			'inquiry_bcc'         => self::cleanEmail( $input['inquiry_bcc'] ?? '', 'inquiry_bcc', 'interne Kopie (BCC)' ),
+			'field_map'           => self::cleanFieldMap( $input['field_map'] ?? [] ),
+			'cf_map'              => self::cleanCustomFieldMap( $input['cf_map'] ?? [] ),
 		];
 
 		$this->cache = null;
 		return $clean;
+	}
+
+	/** Formular-ID als Integer; existiert das CF7-Formular nicht, wird 0 gespeichert und ein Hinweis angezeigt. */
+	private static function cleanFormId( mixed $value ): int {
+		$id = absint( $value );
+		if ( $id > 0 && function_exists( 'wpcf7_contact_form' ) && null === wpcf7_contact_form( $id ) ) {
+			add_settings_error( self::OPTION, 'psl_cf7_form', 'Das ausgewählte Contact-Form-7-Formular existiert nicht.' );
+			return 0;
+		}
+		return $id;
+	}
+
+	private static function cleanEmail( mixed $value, string $code, string $label ): string {
+		$email = sanitize_email( wp_unslash( (string) $value ) );
+		if ( '' !== trim( (string) $value ) && ( '' === $email || ! is_email( $email ) ) ) {
+			add_settings_error( self::OPTION, 'psl_' . $code, 'Ungültige E-Mail-Adresse: ' . $label . '.' );
+			return '';
+		}
+		return '' === $email ? '' : $email;
+	}
+
+	/** @return array<string, string> */
+	public static function cleanFieldMap( mixed $value ): array {
+		$value = is_array( $value ) ? $value : [];
+		$map   = [];
+		foreach ( self::DEFAULT_FIELD_MAP as $key => $default ) {
+			$name        = isset( $value[ $key ] ) ? trim( (string) $value[ $key ] ) : $default;
+			$map[ $key ] = preg_match( '/^[a-zA-Z][0-9a-zA-Z:._-]*$/', $name ) ? $name : ( 'salutation' === $key ? '' : $default );
+		}
+		return $map;
+	}
+
+	/** @return array<string, string> nur bekannte Schlüssel, nur gültige Propstack-Feldnamen */
+	public static function cleanCustomFieldMap( mixed $value ): array {
+		$value = is_array( $value ) ? $value : [];
+		$map   = [];
+		foreach ( self::ATTRIBUTION_KEYS as $key ) {
+			$name = isset( $value[ $key ] ) ? strtolower( trim( (string) $value[ $key ] ) ) : '';
+			if ( '' !== $name && preg_match( '/^[a-z0-9_]{1,64}$/', $name ) ) {
+				$map[ $key ] = $name;
+			}
+		}
+		return $map;
 	}
 
 	/** Schreibt Werte direkt (CLI/Tests) – ohne Settings-API-Formular. */
@@ -119,6 +213,12 @@ final class Settings {
 			$merged[ $key ] = self::intList( $merged[ $key ] );
 		}
 		$merged['sync_interval'] = self::clampInterval( $merged['sync_interval'] );
+		$merged['cf7_form_id']   = absint( $merged['cf7_form_id'] );
+		foreach ( [ 'inquiry_email', 'inquiry_bcc' ] as $key ) {
+			$merged[ $key ] = is_email( (string) $merged[ $key ] ) ? (string) $merged[ $key ] : '';
+		}
+		$merged['field_map'] = self::cleanFieldMap( $merged['field_map'] );
+		$merged['cf_map']    = self::cleanCustomFieldMap( $merged['cf_map'] );
 		update_option( self::OPTION, $merged, false );
 		$this->cache = null;
 	}

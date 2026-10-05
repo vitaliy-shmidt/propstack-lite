@@ -158,9 +158,12 @@ final class SettingsPage {
 					</tr>
 				</table>
 
+				<?php $this->renderLeadSettings( $o ); ?>
+
 				<?php submit_button(); ?>
 			</form>
 
+			<?php $this->renderLeadStatus(); ?>
 			<?php $this->renderSyncBox(); ?>
 
 			<h2>Shortcode</h2>
@@ -196,6 +199,116 @@ final class SettingsPage {
 				</fieldset>
 			</td>
 		</tr>
+		<?php
+	}
+
+	/** Einstellungen „Immobilienanfragen“ (Contact Form 7 → Propstack-Mail). */
+	private function renderLeadSettings( array $o ): void {
+		$name     = Settings::OPTION;
+		$forms    = [];
+		$cf7Ready = \PropstackLite\Leads\Cf7Integration::isAvailable();
+		if ( $cf7Ready ) {
+			foreach ( get_posts( [ 'post_type' => 'wpcf7_contact_form', 'numberposts' => 100, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC' ] ) as $post ) {
+				$forms[ (int) $post->ID ] = $post->post_title;
+			}
+		}
+		$labels = [
+			'salutation' => 'Anrede (optional)',
+			'first_name' => 'Vorname',
+			'last_name'  => 'Nachname',
+			'email'      => 'E-Mail',
+			'phone'      => 'Telefon',
+			'message'    => 'Nachricht',
+			'consent'    => 'Zustimmung (acceptance-Feld)',
+		];
+		$map   = $this->settings->fieldMap();
+		$cfMap = $this->settings->customFieldMap();
+		?>
+		<h2>Immobilienanfragen (Contact Form 7 → Propstack)</h2>
+		<?php if ( ! $cf7Ready ) : ?>
+			<div class="notice notice-warning inline"><p>Contact Form 7 ist nicht aktiv. Immobilienanfragen sind derzeit deaktiviert.</p></div>
+		<?php endif; ?>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="psl-cf7-form">Contact-Form-7-Formular</label></th>
+				<td>
+					<?php if ( $cf7Ready ) : ?>
+						<select id="psl-cf7-form" name="<?php echo esc_attr( $name ); ?>[cf7_form_id]">
+							<option value="0">– kein Formular –</option>
+							<?php foreach ( $forms as $id => $title ) : ?>
+								<option value="<?php echo esc_attr( (string) $id ); ?>" <?php selected( $this->settings->cf7FormId(), $id ); ?>><?php echo esc_html( $title . ' (ID ' . $id . ')' ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					<?php else : ?>
+						<input type="number" id="psl-cf7-form" min="0" name="<?php echo esc_attr( $name ); ?>[cf7_form_id]" value="<?php echo esc_attr( (string) $this->settings->cf7FormId() ); ?>">
+					<?php endif; ?>
+					<p class="description">Nur dieses Formular wird von Propstack Lite verarbeitet; alle anderen CF7-Formulare bleiben unverändert.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="psl-inquiry-email">Propstack-Anfrage-E-Mail-Adresse</label></th>
+				<td>
+					<input type="email" id="psl-inquiry-email" name="<?php echo esc_attr( $name ); ?>[inquiry_email]" value="<?php echo esc_attr( $o['inquiry_email'] ); ?>" class="regular-text" autocomplete="off">
+					<p class="description">Mit Propstack verbundenes Postfach, das die Automatisierung „Neue Portalanfrage“ verarbeitet. Empfänger der Anfrage-Mail (überschreibt den Empfänger des Formulars).</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="psl-inquiry-bcc">Interne Kopie (BCC, optional)</label></th>
+				<td><input type="email" id="psl-inquiry-bcc" name="<?php echo esc_attr( $name ); ?>[inquiry_bcc]" value="<?php echo esc_attr( $o['inquiry_bcc'] ); ?>" class="regular-text" autocomplete="off"></td>
+			</tr>
+			<tr>
+				<th scope="row">Feldzuordnung (CF7-Feldnamen)</th>
+				<td>
+					<fieldset>
+						<legend class="screen-reader-text">Feldzuordnung</legend>
+						<?php foreach ( $labels as $key => $label ) : ?>
+							<label style="display:block;margin-bottom:4px">
+								<span style="display:inline-block;min-width:230px"><?php echo esc_html( $label ); ?></span>
+								<input type="text" class="code" name="<?php echo esc_attr( $name ); ?>[field_map][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $map[ $key ] ); ?>">
+							</label>
+						<?php endforeach; ?>
+						<p class="description">Namen der Formular-Tags im CF7-Formular, z. B. <code>[text* your-first-name]</code> → <code>your-first-name</code>. Die Zustimmung muss ein <code>[acceptance …]</code>-Feld sein.</p>
+					</fieldset>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row">Propstack-Custom-Fields (optional)</th>
+				<td>
+					<fieldset>
+						<legend class="screen-reader-text">Propstack-Custom-Fields</legend>
+						<?php foreach ( Settings::ATTRIBUTION_KEYS as $key ) : ?>
+							<label style="display:block;margin-bottom:4px">
+								<span style="display:inline-block;min-width:230px"><code><?php echo esc_html( $key ); ?></code> → client_cf_</span>
+								<input type="text" class="code" name="<?php echo esc_attr( $name ); ?>[cf_map][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cfMap[ $key ] ?? '' ); ?>" placeholder="leer = nicht senden">
+							</label>
+						<?php endforeach; ?>
+						<p class="description">Nur ausfüllen, wenn das Custom Field in Propstack existiert. Leer = wird nicht übertragen. In Phase 4 steht nur <code>lead_id</code> zur Verfügung; UTM/GCLID folgen mit dem Tracking.</p>
+					</fieldset>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/** Konfigurationsprüfung der Anfragen (keine Secrets). */
+	private function renderLeadStatus(): void {
+		$check = ( new \PropstackLite\Leads\LeadSetupCheck( $this->settings ) )->run();
+		$row   = static function ( string $label, bool $ok, string $okText, string $failText ): void {
+			printf( '<tr><th>%s</th><td>%s %s</td></tr>', esc_html( $label ), $ok ? '✅' : '⚠️', esc_html( $ok ? $okText : $failText ) );
+		};
+		?>
+		<h2>Immobilienanfragen – Status</h2>
+		<table class="widefat striped" style="max-width:720px">
+			<tbody>
+				<?php
+				$row( 'Contact Form 7', $check['cf7'], 'erkannt', 'nicht aktiv' );
+				$row( 'Formular', null !== $check['form'], 'gültig: ' . (string) $check['form'], 'fehlt oder existiert nicht' );
+				$row( 'Propstack-Zieladresse', $check['email'], 'gesetzt', 'fehlt' );
+				$row( 'Formularfelder', [] === $check['missingFields'] && false !== $check['consentIsAcceptance'], 'vollständig', 'fehlend/ungültig: ' . implode( ', ', $check['missingFields'] ) . ( false === $check['consentIsAcceptance'] ? ' – Zustimmung ist kein acceptance-Feld' : '' ) );
+				$row( 'Lead-Integration', $check['ready'], 'bereit', 'nicht vollständig konfiguriert – Detailseiten zeigen statt des Formulars einen neutralen Kontakthinweis' );
+				?>
+			</tbody>
+		</table>
 		<?php
 	}
 

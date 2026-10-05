@@ -1,6 +1,6 @@
 # Entscheidung 003: Leads über Contact Form 7 → Propstack-Mailintegration
 
-Status: angenommen (2026-10-05), Umsetzung Phase 4.
+Status: angenommen (2026-10-05), umgesetzt in Phase 4 (Details und gewählter CF7-Eingriff: [leads.md](../leads.md)).
 
 ## Kontext
 

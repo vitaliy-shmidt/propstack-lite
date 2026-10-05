@@ -10,6 +10,9 @@ use PropstackLite\Cli\Command;
 use PropstackLite\Frontend\DetailController;
 use PropstackLite\Frontend\ListShortcode;
 use PropstackLite\Frontend\TemplateLoader;
+use PropstackLite\Leads\Cf7Integration;
+use PropstackLite\Leads\InquiryMailFormatter;
+use PropstackLite\Leads\RateLimiter;
 use PropstackLite\Mapping\PropertyMapper;
 use PropstackLite\Rest\WebhookController;
 use PropstackLite\Routing\Router;
@@ -63,6 +66,19 @@ final class Plugin {
 		( new Router() )->register();
 		( new DetailController( $store, $this->settings, $urls, $templates, new Clock() ) )->register();
 		( new ListShortcode( $store, $this->settings, $templates, $urls ) )->register();
+
+		// Immobilienanfragen nur mit aktivem Contact Form 7 (alle aktiven Plugins sind zu plugins_loaded geladen).
+		if ( Cf7Integration::isAvailable() ) {
+			( new Cf7Integration(
+				$this->settings,
+				$store,
+				$urls,
+				new Clock(),
+				new Logger(),
+				new InquiryMailFormatter(),
+				new RateLimiter( wp_salt( 'nonce' ) )
+			) )->register();
+		}
 
 		// Theme-Adapter erst nach dem Laden des Themes prüfen (Theme-Klassen existieren vorher nicht).
 		add_action(

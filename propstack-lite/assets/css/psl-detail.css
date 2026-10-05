@@ -428,16 +428,47 @@
 }
 
 /* Kontakt */
+/*
+ * Sprungziel #psl-contact: Themes mit fixem Header setzen --psl-scroll-offset auf ihre Headerhöhe,
+ * z. B. :root { --psl-scroll-offset: 120px; } – theme-neutral, ohne JavaScript.
+ */
 .psl-section--contact {
 	padding: 24px;
 	border-radius: var(--psl-radius);
 	background: var(--psl-surface);
-	scroll-margin-top: 24px;
+	scroll-margin-top: var(--psl-scroll-offset, 24px);
+}
+
+.psl-section--contact:focus {
+	outline: none;
+}
+
+.psl-section--contact:focus-visible {
+	outline: 3px solid currentColor;
+	outline-offset: 4px;
 }
 
 .psl-contact__context {
 	margin: 0;
 	color: var(--psl-muted);
+}
+
+/* Formular-Gestaltung bleibt bei Contact Form 7 bzw. dem Theme; nur Abstand. */
+.psl-contact__form {
+	margin-top: 16px;
+}
+
+.psl-contact__fallback {
+	margin: 12px 0 0;
+}
+
+/* Honeypot: für Menschen unsichtbar, für Screenreader ausgeblendet (aria-hidden). */
+.psl-detail-wrap .psl-hp {
+	position: absolute !important;
+	left: -10000px !important;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
 }
 
 /* Hinweise und Buttons */

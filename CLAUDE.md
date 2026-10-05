@@ -21,7 +21,8 @@ Siehe Statustabelle in `docs/README.md`. Phasen-Workflow: **Plan → Implementie
 ## Sicherheitsregeln (Details: `docs/security.md`)
 
 - `Propstack-API.txt` enthält Zugangsdaten: **nie ausgeben, kopieren, committen** (per `.gitignore` und `.htaccess` geschützt). Key in WordPress bevorzugt als Konstante `PSL_API_KEY`.
-- Propstack nur **lesend** verwenden. POST/PUT/PATCH/DELETE gegen Propstack nur nach ausdrücklicher Freigabe.
+- Propstack nur **lesend** verwenden. POST/PUT/PATCH/DELETE gegen Propstack nur nach ausdrücklicher Freigabe. Auch Test-Anfragen an das echte Propstack-Postfach (erzeugen CRM-Kontakte) nur nach Freigabe.
+- Leads: keine Anfrageinhalte speichern oder loggen (nur Lead-ID, Property-ID, Status); Property immer serverseitig gegen den Store prüfen ([docs/leads.md](docs/leads.md)).
 - `hide_address` respektieren, private bzw. nicht freigegebene Bilder nie übernehmen, interne CRM-Felder nie speichern oder ausgeben.
 - Alles escapen; Rich Text mit `wp_kses_post`; keine personenbezogenen Daten in Logs, dataLayer oder Doku-Beispielen.
 

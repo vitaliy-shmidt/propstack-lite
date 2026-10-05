@@ -153,7 +153,10 @@ final class DetailController {
 			header( 'X-Robots-Tag: noindex, follow', true );
 		}
 
-		$view       = PropertyViewModel::build( $stored->property, $decision, $canonical, $this->urls->overviewUrl() );
+		$view = PropertyViewModel::build( $stored->property, $decision, $canonical, $this->urls->overviewUrl() );
+		// Ist ein Anfrageformular verfügbar? (Phase 4: Contact Form 7 + vollständige Konfiguration)
+		$view['contact']['formAvailable'] = $view['contact']['allowed'] && (bool) apply_filters( 'psl_inquiry_form_available', false, $view );
+
 		$this->view = (array) apply_filters( 'psl_property_view_model', $view, $stored->property, $decision );
 	}
 
