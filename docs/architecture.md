@@ -32,7 +32,9 @@ Besucher ─► /immobilien/{slug}-{id}/ ─► Routing\Router (Rewrite, Query-V
             ─► Frontend\DetailController ─► PropertyStore::find() ─► Routing\RouteResolver (200/404/410)
             ─► 301-Kanonisierung (Routing\UrlGenerator) ─► Frontend\PropertyViewModel
             ─► TemplateLoader ─► single-property.php | property-gone.php | Theme-404
-            (später: Galerie, Leads, SEO-Ausbau, Tracking)
+            ─► Seo\SeoContext ─► Seo\SeoService ─► CoreAdapter | YoastAdapter | RankMathAdapter (Head)
+Suchmaschine ─► Sitemap (Core/Yoast/Rank Math) ─► Seo\Sitemap\SitemapSource ─► PropertyStore::sitemapRows()
+            (später: Tracking)
 ```
 
 ## Komponenten und Klassen
@@ -58,14 +60,18 @@ Besucher ─► /immobilien/{slug}-{id}/ ─► Routing\Router (Rewrite, Query-V
 | `Routing\Router` | Rewrite-Regeln, Query-Vars, Legacy-Mapping (`?ps_id=`), Rewrite-Version |
 | `Routing\UrlGenerator` | einzige Quelle für Detail-, kanonische, Legacy- und Übersichts-URLs (absolut, Unterverzeichnis-fähig) |
 | `Routing\RouteResolver`, `RouteDecision` | reine Statusentscheidung 200/404/410 aus gespeichertem Zustand und Zeit |
-| `Frontend\DetailController` | WordPress-Request-Steuerung der Detailseite: Query, 404/410, 301, Robots, Canonical, Titel, Body-Klassen, Template |
+| `Frontend\DetailController` | WordPress-Request-Steuerung der Detailseite: Query, 404/410, 301, Header `X-Robots-Tag`, Body-Klassen, Template (Head-Tags seit Phase 5 in `Seo\*`) |
+| `Seo\SeoService`, `SeoData` | zentrale SEO-Logik ohne WordPress: Title, Description, Robots, OG/Twitter, JSON-LD ([seo.md](seo.md)) |
+| `Seo\SeoContext`, `SeoPlugins`, `SeoIntegration` | SEO-Daten je Request; Erkennung Yoast > Rank Math > Core; Registrierung genau eines Adapters, Sitemaps, Cache-Invalidierung |
+| `Seo\CoreAdapter`, `YoastAdapter`, `RankMathAdapter` | Ausgabe ohne SEO-Plugin bzw. Werteübergabe über offizielle Yoast-/Rank-Math-Filter |
+| `Seo\Sitemap\*` | `SitemapSource` (indexierbare Objekte, URL = Canonical), Provider für Core/Yoast/Rank Math, `SitemapCache` |
 | `Frontend\PropertyViewModel` | präsentationsfertige Template-Daten aus dem gewhitelisteten Modell: Breadcrumb, Preis, Kurzfakten, Eckdaten-Gruppen, Merkmale, Energie, Galerie/Grundrisse (nur HTTPS, `srcset`), Ansprechpartner, Status-Badges ([frontend.md](frontend.md)) |
 | `Frontend\Formatter` | deutsche Formatierung (Geld, Monatsbeträge, €/m², Flächen, Zimmer, Etage, Datum, Energiekennwert) und Enum-Übersetzung |
 | `assets/js/psl-gallery.js` | Lightbox (Vanilla JS, `<dialog>`, Tastatur/Touch), nur auf Detailseiten mit Bildern |
 | `Frontend\TemplateLoader` | Templates mit Theme-Override (`{theme}/propstack-lite/`), Header/Footer für klassische und Block-Themes |
 | `Frontend\ListShortcode` | Listenausgabe aus dem Store |
 | `Theme\AvadaAdapter` | optional, nur bei aktivem Avada; markiert Seite/Wrapper (**nicht verifiziert**) |
-| `Admin\SettingsPage`, `Admin\Notices` | Einstellungen, Sync-Status, „Jetzt synchronisieren“, Hinweise |
+| `Admin\SettingsPage`, `Admin\Notices` | Einstellungen, Sync-/Lead-/SEO-Status, „Jetzt synchronisieren“, Hinweise (u. a. „Mehrere SEO-Plugins aktiv“) |
 | `Rest\WebhookController` | `POST /wp-json/propstack/v1/webhook` → plant Sync (kein Sync im Request) |
 | `Cli\Command` | `wp psl sync|status|statuses|audit` |
 | `Support\Slugger`, `Logger`, `Clock` | Slugs, Logging ohne PII, testbare Zeit |
@@ -101,9 +107,9 @@ Contact Form 7 (nur wenn aktiv) rendert, validiert und versendet; Propstack Lite
 | `Leads\RateLimiter` | 5 Anfragen / 10 min je HMAC-gehashter Client-IP (Transient) |
 | `Leads\LeadSetupCheck` | Konfigurationsprüfung für die Einstellungsseite |
 
-## SEO-Architektur – Basis implementiert (Phase 2), Ausbau **Geplant (Phase 5)**
+## SEO-Architektur – implementiert (Phase 5)
 
-Implementiert im `DetailController`: Statuscodes, 301-Kanonisierung, `<link rel="canonical">`, `noindex, follow` über `wp_robots` und `X-Robots-Tag`, Dokumenttitel. Geplant: `Seo\SeoService` für Title, Description, OG und JSON-LD; Adapter für WordPress-Core, Yoast, Rank Math; eigener Sitemap-Provider. Details: [routing-seo.md](routing-seo.md).
+Eine Quelle für alle Werte: `Seo\SeoService` berechnet aus `Property`, `RouteDecision`, kanonischer URL und Site-Daten ein `SeoData`-Objekt. `Seo\SeoIntegration` registriert genau einen Ausgabe-Adapter (Yoast > Rank Math > Core); die Adapter enthalten keine Fachlogik. Sitemaps lesen über `SitemapSource` dieselben Store-Kriterien wie die Detailseite (aktiv + öffentlicher Status) und dieselbe URL wie der Canonical. Statuscodes, 301 und `X-Robots-Tag` bleiben im `DetailController`. Details: [seo.md](seo.md).
 
 ## Tracking-Architektur – **Geplant (Phase 6)**
 

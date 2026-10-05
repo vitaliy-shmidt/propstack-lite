@@ -15,6 +15,9 @@ use PropstackLite\Leads\InquiryMailFormatter;
 use PropstackLite\Leads\RateLimiter;
 use PropstackLite\Mapping\PropertyMapper;
 use PropstackLite\Rest\WebhookController;
+use PropstackLite\Seo\SeoContext;
+use PropstackLite\Seo\SeoIntegration;
+use PropstackLite\Seo\Sitemap\SitemapSource;
 use PropstackLite\Routing\Router;
 use PropstackLite\Routing\UrlGenerator;
 use PropstackLite\Storage\PropertyStore;
@@ -66,6 +69,7 @@ final class Plugin {
 		( new Router() )->register();
 		( new DetailController( $store, $this->settings, $urls, $templates, new Clock() ) )->register();
 		( new ListShortcode( $store, $this->settings, $templates, $urls ) )->register();
+		( new SeoIntegration( new SeoContext( $urls ), new SitemapSource( $store, $this->settings, $urls ) ) )->register();
 
 		// Immobilienanfragen nur mit aktivem Contact Form 7 (alle aktiven Plugins sind zu plugins_loaded geladen).
 		if ( Cf7Integration::isAvailable() ) {

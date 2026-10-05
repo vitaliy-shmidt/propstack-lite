@@ -1,5 +1,27 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-06 – Phase 5: SEO und Sitemaps für Detailseiten (Version 0.4.0)
+
+**Propstack-E2E-Test (Anfragen):** geprüft, **nicht gesendet** – Propstack-Postfachadresse unbekannt, kein Lese-/Prüfzugriff auf Kontakte/Quellen/Automatisierungen (Key: 401), kein Mailtransport in der Testinstanz. Protokoll in [leads.md](leads.md).
+
+**Wichtigste Änderungen**
+- Neue SEO-Schicht `src/Seo/`: `SeoService` (zentrale Logik ohne WordPress), `SeoData`, `SeoContext`, `SeoPlugins`, `SeoIntegration`, Adapter `CoreAdapter`, `YoastAdapter`, `RankMathAdapter`; Sitemaps `Sitemap\SitemapSource`, `CoreSitemapProvider`, `YoastSitemapProvider`, `RankMathSitemapProvider`, `SitemapCache`.
+- Title „{n}-Zimmer-{Objektart} {kaufen|mieten} in {Ort}-{Ortsteil} | {Marke}“ (max. 70 Zeichen, Kürzung ohne Wortschnitt), Meta Description (≤ 158 Zeichen, ganze Sätze), Canonical = UrlGenerator-URL, Robots je Zustand, Open Graph/Twitter mit erstem öffentlichen Nicht-Grundriss-Bild, JSON-LD `RealEstateListing` + `Offer` (nie `price: 0`) + `Apartment`/`House`/`Place` + `RealEstateAgent` (nur Website-Daten) + `BreadcrumbList`.
+- Ausgabe: ohne SEO-Plugin selbst (je Tag genau einmal), mit Yoast SEO bzw. Rank Math ausschließlich über deren offizielle Filter; Priorität Yoast > Rank Math > Core; Admin-Hinweis und Status-Box „SEO“ bei mehreren SEO-Plugins; noindex-Sicherheitsnetz für das nicht integrierte Rank Math.
+- XML-Sitemaps für WordPress-Core (`wp-sitemap-propstack-N.xml`), Yoast und Rank Math (`propstack-sitemap.xml`): nur indexierbare Objekte, URL = Canonical, `lastmod = content_changed_at`, paginiert; Cache-Invalidierung nach Sync (`psl_sync_finished`) und Einstellungsänderung.
+- `DetailController` gibt keine Head-Tags mehr aus (Title, Canonical, Robots-Meta → SEO-Schicht); `X-Robots-Tag`, Statuscodes und 301 unverändert.
+- Neue Hooks: Filter `psl_seo_brand`, `psl_seo_data`; Action `psl_sync_finished`.
+
+**Bugs behoben / Befunde:** Yoast leitet `…-sitemap1.xml` um → Seite 1 ohne Nummer; Rank Math ohne Registrierung lädt kein Frontend → Plugin bleibt dann im Core-Modus; Rank-Math-Sitemap-Cache → Invalidierung; Konfliktmodus: Rank Math meldete auf noindex-Seiten „index“ → Sicherheitsnetz.
+
+**Neue Dateien:** `src/Seo/*.php` (8), `src/Seo/Sitemap/*.php` (5), `tests/Unit/SeoServiceTest.php`, `tests/Http/SeoHttpTestCase.php`, `SeoCoreTest.php`, `SeoYoastTest.php`, `SeoRankMathTest.php`, `SeoConflictTest.php`, `docs/seo.md`; erweitert: `PropertyStore` (Sitemap-Abfragen), `SyncService` (Action), `Notices`, `SettingsPage`, `psl-test-hooks.php`.
+
+**DB-Migrationen:** keine.
+
+**Breaking Changes:** Der Dokumenttitel der Detailseiten ist jetzt der SEO-Title (inkl. Marke) statt „Objekttitel – Website“; die H1 bleibt der Propstack-Titel. Wer `document_title_parts` für Detailseiten genutzt hat, muss auf `psl_seo_data` umstellen.
+
+**Offene Punkte:** Propstack-E2E-Test der Anfragen; Verifikation mit Live-Site (Avada) und deren SEO-Plugin-Konfiguration; Rich-Results-Test mit öffentlicher URL; andere SEO-Plugins (AIOSEO, SEOPress) nicht erkannt.
+
 ## 2026-10-05 – Phase 4: Immobilienanfragen über Contact Form 7 → Propstack
 
 **Wichtigste Änderungen**

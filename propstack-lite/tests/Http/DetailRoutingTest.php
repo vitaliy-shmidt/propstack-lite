@@ -197,7 +197,7 @@ final class DetailRoutingTest extends IntegrationTestCase {
 		$this->assertArrayNotHasKey( 'x-robots-tag', $r['headers'] );
 		$this->assertMatchesRegularExpression( '/<body[^>]*class="[^"]*psl-property psl-property--active/', $r['body'] );
 		// wp_strip_all_tags entfernt <script>-Blöcke samt Inhalt bereits beim Mapping.
-		$this->assertMatchesRegularExpression( '#<title>Lichtdurchflutet &\#8211; #', $r['body'], 'Dokumenttitel aus Objekttitel' );
+		$this->assertMatchesRegularExpression( '#<title>2-Zimmer-Wohnung kaufen in Berlin-Mitte \| #', $r['body'], 'SEO-Titel (Phase 5), H1 bleibt Objekttitel' );
 		$this->assertStringContainsString( 'psl-detail.css', $r['body'] );
 		$this->assertStringContainsString( 'id="psl-contact"', $r['body'], 'Platzhalter Kontaktformular' );
 		$this->assertStringContainsString( 'Kaufpreis', $r['body'] );
@@ -244,7 +244,7 @@ final class DetailRoutingTest extends IntegrationTestCase {
 		$this->assertSame( 200, $r['status'] );
 		$this->assertStringContainsString( 'psl-badge--sold">Vermietet<', $r['body'], 'RENT → Vermietet' );
 		$this->assertSame( 'noindex, follow', $r['headers']['x-robots-tag'] ?? null );
-		$this->assertMatchesRegularExpression( "/<meta name='robots' content='[^']*noindex[^']*follow/", $r['body'] );
+		$this->assertMatchesRegularExpression( '#<meta\s+name=["\']robots["\']\s+content=["\'][^"\']*noindex[^"\']*follow#', $r['body'] ); // Core- oder SEO-Plugin-Format
 		$this->assertStringNotContainsString( 'id="psl-contact"', $r['body'], 'kein Kontaktformular' );
 		$this->assertStringContainsString( 'Diese Immobilie ist bereits vermietet.', $r['body'] );
 

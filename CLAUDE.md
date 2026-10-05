@@ -3,7 +3,7 @@
 **Propstack Listings Lite** ist ein WordPress-Plugin für Picaflor Immobilien: Es synchronisiert öffentliche Immobilien aus Propstack (führendes System) in eine lokale Tabelle und stellt sie auf der Website dar. Später kommen dynamische, SEO-fähige Detailseiten, Anfragen über Contact Form 7 und Kampagnen-Tracking dazu.
 
 - Plugin: `propstack-lite/` (Einstieg `propstack-lite.php`, Code in `src/`, Namespace `PropstackLite\`)
-- Dokumentation: `docs/` – **zuerst `docs/README.md` lesen** (Status, offene Punkte, Verweise); Detailseite/Templates/Galerie: `docs/frontend.md`
+- Dokumentation: `docs/` – **zuerst `docs/README.md` lesen** (Status, offene Punkte, Verweise); Detailseite/Templates/Galerie: `docs/frontend.md`; SEO/Sitemaps: `docs/seo.md`
 - Theme der Live-Seite: Avada (lokal nicht vorhanden, Integration nur über Adapter)
 
 ## Aktueller Stand
@@ -17,6 +17,7 @@ Siehe Statustabelle in `docs/README.md`. Phasen-Workflow: **Plan → Implementie
 - Sichtbarkeit wird serverseitig über die Einstellung „Öffentliche Propstack-Status“ erzwungen (`PropertyStore::queryPublic`). Shortcode- oder GET-Parameter dürfen nie freischalten.
 - Kein CPT pro Immobilie, kein Rewrite des Plugins, schrittweise Migration.
 - Theme-, CF7- und SEO-Plugin-Integration nur über Adapter und offizielle Hooks.
+- SEO-Werte nur im `Seo\SeoService`; genau ein Ausgabe-Adapter je Request (Yoast > Rank Math > Core). Keine Head-Tags im `DetailController` oder in Templates.
 
 ## Sicherheitsregeln (Details: `docs/security.md`)
 
@@ -42,6 +43,6 @@ cd propstack-lite
 composer install                          # nur Dev-Abhängigkeiten (PHPUnit, WP-Stubs)
 vendor/bin/phpunit --testsuite unit        # ohne WordPress
 PSL_WP_LOAD=/pfad/zu/wp-load.php vendor/bin/phpunit --testsuite integration   # NUR Wegwerf-Instanz!
-PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpunit --testsuite http   # laufender Testserver nötig
+PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpunit --testsuite http   # laufender Testserver nötig; SEO-Modi: docs/testing.md
 wp psl status | wp psl sync [--full|--id=N] | wp psl statuses | wp psl audit
 ```

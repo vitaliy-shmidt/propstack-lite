@@ -169,3 +169,20 @@ Erzeugt einen Kontakt/eine Anfrage im Propstack-CRM.
 3. Auf der Detailseite eine Anfrage mit eindeutig erkennbaren **Testdaten** senden (z. B. Vorname „E2E-Test“, eigene Test-Mailadresse), Lead-ID im Formular notieren.
 4. Prüfen in Propstack: Kontakt angelegt/zugeordnet, Objekt verknüpft, Nachricht übernommen, Quelle korrekt, Zustimmung gesetzt, ggf. Custom Field mit Lead-ID.
 5. Testkontakt anschließend in Propstack entfernen.
+
+Vorgaben der Freigabe (2026-10-06): genau **ein** synthetischer Testkontakt („PSL Integrationstest“, Nachricht mit „TEST – Propstack Listings Lite“), nur die Kontaktzustimmung, keine Marketing-Opt-ins; Testkontakt nicht per API löschen oder ändern; bei Fehlschlag keine weiteren Versuche. In Git werden nur „synthetischer Testkontakt“ und keine echten Adressen dokumentiert.
+
+### Protokoll
+
+| Datum | Ergebnis | Workflow | Zuordnung | Quelle | Besonderheiten |
+|---|---|---|---|---|---|
+| 2026-10-06 | **Nicht durchgeführt** – keine Anfrage gesendet | nicht verifizierbar | nicht verifizierbar | nicht verifizierbar | Voraussetzungen nicht prüfbar, siehe unten |
+
+Gründe (Prüfung vor dem Senden, nur lesend):
+
+- **Empfangsadresse unbekannt:** In der Testinstanz ist nur eine Platzhalter-Adresse (`…@example.test`) hinterlegt; die echte, mit Propstack verbundene Postfachadresse liegt nicht vor.
+- **Kein Prüfzugriff auf das CRM:** Der vorhandene API-Key ist auf Objekte/Status/Projekte beschränkt (`contacts`, `contact_sources`, `activity_types`, `hooks`, `brokers` → 401). Postfachverbindung, Automatisierung „Neue Portalanfrage“, Kontaktquelle und das Ergebnis (Kontakt/Zuordnung) wären nicht überprüfbar.
+- **Kein Mailtransport** in der lokalen Testinstanz (PHP `mail()` ohne SMTP).
+- Erfüllt: Formular und Plugin-Einstellungen „bereit“, Testobjekt öffentlich und anfragbar.
+
+Nachholen, sobald Propstack-Postfachadresse bekannt, Staging mit SMTP vorhanden und eine Prüfung in Propstack (UI oder Key mit Lese-Rechten auf Kontakte) möglich ist.

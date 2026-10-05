@@ -20,6 +20,8 @@ use PropstackLite\Support\Clock;
  *  template_redirect  Legacy- und Kanonisierungs-301, 410-Status, X-Robots-Tag, ViewModel
  *  template_include   single-property.php bzw. property-gone.php (Theme-Override möglich)
  *
+ * Title, Description, Canonical, Robots, OG und JSON-LD kommen aus der SEO-Schicht (Seo\SeoIntegration).
+ *
  * Es wird KEIN virtuelles WP_Post erzeugt: Die Route ist für WordPress weder Seite noch Beitrag
  * (is_singular() = false). Themes erhalten über get_header()/get_footer() ihren normalen Rahmen.
  */
@@ -49,10 +51,7 @@ final class DetailController {
 		add_filter( 'redirect_canonical', [ $this, 'disableCoreCanonical' ] );
 		add_action( 'template_redirect', [ $this, 'templateRedirect' ], 1 );
 		add_filter( 'template_include', [ $this, 'templateInclude' ], 99 );
-		add_filter( 'document_title_parts', [ $this, 'documentTitle' ] );
 		add_filter( 'body_class', [ $this, 'bodyClass' ] );
-		add_filter( 'wp_robots', [ $this, 'robots' ] );
-		add_action( 'wp_head', [ $this, 'printCanonical' ], 1 );
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueueAssets' ] );
 		add_filter( 'wp_resource_hints', [ $this, 'resourceHints' ], 10, 2 );
 	}
@@ -176,19 +175,6 @@ final class DetailController {
 
 	/* -------------------------------------------------------------- Head/Body */
 
-	public function documentTitle( array $parts ): array {
-		if ( ! Router::isPropertyRequest() ) {
-			return $parts;
-		}
-		$decision = $this->decision();
-		if ( null !== $this->view ) {
-			$parts['title'] = $this->view['title']; // wp_get_document_title() escaped die Teile selbst
-		} elseif ( 410 === $decision->httpStatus ) {
-			$parts['title'] = 'Immobilie nicht mehr verfügbar';
-		}
-		return $parts;
-	}
-
 	public function bodyClass( array $classes ): array {
 		if ( ! Router::isPropertyRequest() || 404 === $this->decision()->httpStatus ) {
 			return $classes;
@@ -196,22 +182,6 @@ final class DetailController {
 		$classes[] = 'psl-property';
 		$classes[] = 'psl-property--' . sanitize_html_class( $this->decision()->state );
 		return $classes;
-	}
-
-	public function robots( array $robots ): array {
-		if ( Router::isPropertyRequest() && $this->decision()->isNoindex() ) {
-			unset( $robots['index'] );
-			$robots['noindex'] = true;
-			$robots['follow']  = true;
-		}
-		return $robots;
-	}
-
-	/** Basis-Canonical (Phase 2). Abstimmung mit Yoast/Rank Math folgt in Phase 5. */
-	public function printCanonical(): void {
-		if ( null !== $this->view && Router::isPropertyRequest() ) {
-			printf( '<link rel="canonical" href="%s" />' . "\n", esc_url( $this->view['canonicalUrl'] ) );
-		}
 	}
 
 	public function enqueueAssets(): void {

@@ -4,9 +4,9 @@
 
 | Ebene | Werkzeug | Läuft ohne WordPress | Inhalt |
 |---|---|---|---|
-| Unit | PHPUnit 10 (`tests/Unit`) | ja | Mapper/Datenschutzregeln, Sanitizer, Slugger, Formatter, StateResolver, Client (Retry, Fehler, Secrets), Pagination |
+| Unit | PHPUnit 10 (`tests/Unit`) | ja | Mapper/Datenschutzregeln, Sanitizer, Slugger, Formatter, StateResolver, Client (Retry, Fehler, Secrets), Pagination, SEO-Werte (Title, Description, Robots, OG, JSON-LD) |
 | Integration | PHPUnit 10 (`tests/Integration`) + WordPress-Wegwerfinstanz | nein | Store (Sichtbarkeit, Filter, SQL-Whitelist), alle Sync-Übergänge mit simuliertem Propstack (`FakePropstack`), Shortcode-Ausgabe, keine HTTP-Requests im Frontend |
-| HTTP (End-to-End) | PHPUnit 10 (`tests/Http`) + laufender Webserver der Testinstanz | nein | echte Requests: Routing-Matrix 200/301/404/410, Legacy, Unterverzeichnis, Canonical/Robots, Datenschutz und XSS im HTML, 0 Propstack-Requests |
+| HTTP (End-to-End) | PHPUnit 10 (`tests/Http`) + laufender Webserver der Testinstanz | nein | echte Requests: Routing-Matrix 200/301/404/410, Legacy, Unterverzeichnis, Head-Tags je SEO-Modus ohne Dubletten, Schema-Validierung, Sitemaps, Datenschutz und XSS im HTML, 0 Propstack-Requests |
 | Contract (manuell) | WP-CLI gegen echte API (nur lesend) | nein | `wp psl sync --full`, `wp psl audit` |
 | Manuell/Staging | Checklisten unten | – | Admin, Frontend, später Avada/CF7/SEO/Tracking |
 
@@ -34,6 +34,23 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 - Contact Form 7 6.1.7 in der Testinstanz installiert; `InquiryTest` legt eigene Testformulare an und löscht sie wieder.
 - Testserver nur über die selbst dokumentierte PID beenden – keine globalen `taskkill`-Befehle.
 
+### SEO-Modi (Phase 5)
+
+Die SEO-HTTP-Tests prüfen je eine Plugin-Konstellation; Klassen anderer Modi werden übersprungen (Modus wird aus `active_plugins` erkannt). Für den vollständigen Nachweis die Suite viermal laufen lassen und dazwischen per WP-CLI umschalten (danach Rewrite-Flush):
+
+| Lauf | Plugins | Testklasse |
+|---|---|---|
+| Core | weder `wordpress-seo` noch `seo-by-rank-math` aktiv | `SeoCoreTest` |
+| Yoast | nur `wordpress-seo` | `SeoYoastTest` |
+| Rank Math | nur `seo-by-rank-math` (+ Option `rank_math_registration_skip = 1`, entspricht „Überspringen“ im Rank-Math-Assistenten) | `SeoRankMathTest` |
+| Konflikt | beide | `SeoConflictTest` |
+
+```bash
+wp plugin activate wordpress-seo && wp rewrite flush   # Beispiel Yoast-Lauf
+```
+
+In der Testinstanz installiert (standardmäßig inaktiv): Yoast SEO 28.6, Rank Math 1.0.279. mu-plugin `psl-test-hooks.php` zusätzlich: Option `psl_test_sitemap_max_urls` verkleinert die Sitemap-Seitengröße (Core/Yoast) für Paginierungstests; Rank Math über seine Einstellung `items_per_page`.
+
 ## Fixtures
 
 `tests/fixtures/*.json` – **anonymisiert/synthetisch**, bilden die beobachtete API-Struktur nach (Label/Value-Format, Bild-Flags, Broker mit internen und öffentlichen Feldern) und enthalten bewusst interne „Köder“-Felder (`note`, `token`, `relationships`, interne Maklerkontakte), deren Werte im Modell nicht auftauchen dürfen. Keine echten Kundendaten in Fixtures aufnehmen.
@@ -49,6 +66,21 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 - StateResolver: 19 Zustandskombinationen
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
+
+## Ergebnisse Phase 5 (2026-10-06)
+
+- Unit: 130 Tests, 543 Assertions – grün (neu: `SeoServiceTest` – Title inkl. Beispiel der Vorgabe, Kürzung ohne Wortschnitt, Objektart/Vermarktung, keine Straße; Description mit Bausteinen, ≤ 160 Zeichen UTF-8, ganze Sätze, kein HTML, nie „0 €“; Robots je Zustand und 410; Canonical/`og:url`; OG/Twitter mit/ohne Bild, keine privaten/Grundriss-Bilder; JSON-LD Kauf/Miete, nie `price: 0`, verborgene Adresse ohne Straße/Geo, `Place`-Fallback, Agentur nur aus Site-Daten, BreadcrumbList; Klartext-Bereinigung).
+- Integration: 16 Tests, 66 Assertions – grün.
+- HTTP (Suite je Modus vollständig ausgeführt, Skips = Klassen der anderen Modi):
+  - Core: 62 Tests, 484 Assertions, 22 übersprungen – grün
+  - Yoast SEO 28.6: 62 Tests, 479 Assertions, 23 übersprungen – grün
+  - Rank Math 1.0.279: 62 Tests, 486 Assertions, 22 übersprungen – grün
+  - Konflikt (beide aktiv): 62 Tests, 354 Assertions, 26 übersprungen – grün
+- Geprüft je Modus: genau 1 Title/Description/Canonical/Robots/OG-Set/`twitter:card`/JSON-LD-Block; Title/Description/Canonical/`og:url`/`og:image`/`og:locale`; H1 = Propstack-Titel; reserviert `index`, Verkauft-Phase `noindex, follow` (+ Header), 410 ohne Canonical/Listing/Weiterleitung, 404 ohne Canonical, Legacy 301; Canonical unverändert mit `utm_*`/`gclid`/`fbclid`; Preis auf Anfrage ohne `Offer` und ohne Bild ohne `og:image`; Schema-Validierung (genau ein `RealEstateListing`, `Offer` mit Preis > 0 und EUR, eindeutige `@id`s, aufgelöste Referenzen, Adresse ohne Straße, eine BreadcrumbList); XSS (Script, Attribut-Ausbruch, `onerror`-URL, Anführungszeichen direkt im Store) nicht ausführbar, JSON-LD gültig; Sitemap-Index und -Inhalt (nur aktive/reservierte öffentliche Objekte, URL = Canonical inkl. `/Picaflor/`, lastmod), Paginierung (Core, Yoast, Rank Math); 0 Propstack-Requests bei Detail-, 410- und Sitemap-Aufrufen.
+- Zusätzlich: Rank Math ohne Registrierung → Plugin fällt in den Core-Modus; Konflikt → nur Yoast erhält Werte, Admin-Hinweis „Mehrere SEO-Plugins aktiv. Für Propstack-Detailseiten wird nur Yoast SEO integriert.“, noindex-Sicherheitsnetz für Rank Math.
+- Befunde während der Tests (behoben): Yoast leitet `…-sitemap1.xml` auf `…-sitemap.xml` um (Seite 1 jetzt ohne Nummer); Rank Math cacht Sitemaps (Invalidierung nach Sync/Einstellungsänderung); Rank Math ohne Registrierung gibt nichts aus (Erkennung angepasst); Konflikt: Rank Math meldete auf noindex-Seiten „index“ (Sicherheitsnetz).
+- **Nicht durchgeführt:** Google Rich Results Test / Schema.org-Validator online (keine öffentliche URL); Tests mit der Live-Site (Avada) und deren SEO-Plugin-Konfiguration.
+- Propstack-E2E-Test (Anfragen): nicht gesendet, Voraussetzungen nicht verifizierbar ([leads.md](leads.md)).
 
 ## Ergebnisse Phase 4 (2026-10-05)
 
@@ -105,5 +137,4 @@ PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpu
 
 - **Avada (Phase 2/3):** reale Testumgebung, Header/Footer/Container, Lightbox, mobil
 - **CF7 (Phase 4):** Formatter-Unit-Tests, manipulierte `property_id`, Honeypot, Rate-Limit; Ende-zu-Ende-Test in Propstack nur nach Freigabe
-- **SEO (Phase 5):** Head-Snapshots je Adapter, Schema-Validator, Sitemap-Inhalt
 - **Tracking (Phase 6):** genau ein `property_lead` nach Erfolg, keiner bei Fehler; keine PII im dataLayer; kein Cookie ohne Consent

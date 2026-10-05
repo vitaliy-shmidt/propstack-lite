@@ -165,6 +165,7 @@ final class SettingsPage {
 
 			<?php $this->renderLeadStatus(); ?>
 			<?php $this->renderSyncBox(); ?>
+			<?php $this->renderSeoBox(); ?>
 
 			<h2>Shortcode</h2>
 			<p><code>[propstack_list per="12" marketing_type="BUY" rs_type="APARTMENT" sort_by="price" order="asc"]</code></p>
@@ -307,6 +308,25 @@ final class SettingsPage {
 				$row( 'Formularfelder', [] === $check['missingFields'] && false !== $check['consentIsAcceptance'], 'vollständig', 'fehlend/ungültig: ' . implode( ', ', $check['missingFields'] ) . ( false === $check['consentIsAcceptance'] ? ' – Zustimmung ist kein acceptance-Feld' : '' ) );
 				$row( 'Lead-Integration', $check['ready'], 'bereit', 'nicht vollständig konfiguriert – Detailseiten zeigen statt des Formulars einen neutralen Kontakthinweis' );
 				?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/** SEO-Integration (Phase 5): welches Plugin die Detailseiten-Tags ausgibt, Sitemap-URL. */
+	private function renderSeoBox(): void {
+		$active  = \PropstackLite\Seo\SeoPlugins::active();
+		$mode    = \PropstackLite\Seo\SeoPlugins::mode();
+		$sitemap = \PropstackLite\Seo\SeoPlugins::CORE === $mode ? home_url( '/wp-sitemap-propstack-1.xml' ) : home_url( '/propstack-sitemap.xml' );
+		?>
+		<h2>SEO</h2>
+		<table class="widefat striped" style="max-width:720px">
+			<tbody>
+				<tr><th>Ausgabe der Head-Tags</th><td><?php echo esc_html( \PropstackLite\Seo\SeoPlugins::LABELS[ $mode ] ); ?></td></tr>
+				<?php if ( count( $active ) > 1 ) : ?>
+					<tr><th>Hinweis</th><td>⚠️ <?php echo esc_html( 'Mehrere SEO-Plugins aktiv. Für Propstack-Detailseiten wird nur ' . \PropstackLite\Seo\SeoPlugins::LABELS[ $mode ] . ' integriert.' ); ?></td></tr>
+				<?php endif; ?>
+				<tr><th>Immobilien-Sitemap</th><td><a href="<?php echo esc_url( $sitemap ); ?>"><?php echo esc_html( $sitemap ); ?></a></td></tr>
 			</tbody>
 		</table>
 		<?php

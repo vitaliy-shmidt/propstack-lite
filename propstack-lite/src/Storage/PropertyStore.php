@@ -219,6 +219,64 @@ final class PropertyStore {
 		return $this->queryPublic( $publicStatusIds, new ListCriteria( perPage: 1 ) )['total'];
 	}
 
+	/**
+	 * Indexierbare Objekte für XML-Sitemaps: aktiv, öffentlicher Status, Daten vorhanden – also genau
+	 * die Objekte, deren Detailseite mit 200 und index antwortet (keine Verkauft-Phase, kein 410).
+	 * lastmod = content_changed_at (UTC; ändert sich nur bei sichtbaren Inhaltsänderungen).
+	 *
+	 * @param list<int> $publicStatusIds
+	 * @return list<array{id: int, slug: string, lastmod: string}>
+	 */
+	public function sitemapRows( array $publicStatusIds, int $offset, int $limit ): array {
+		$where = $this->sitemapWhere( $publicStatusIds );
+		if ( null === $where ) {
+			return [];
+		}
+		[ $sql, $params ] = $where;
+		$params[]         = max( 1, $limit );
+		$params[]         = max( 0, $offset );
+		$rows             = $this->db->get_results(
+			$this->db->prepare( "SELECT propstack_id, slug, COALESCE(content_changed_at, remote_updated_at) AS lastmod FROM {$this->table} WHERE {$sql} ORDER BY propstack_id ASC LIMIT %d OFFSET %d", $params ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+		$out = [];
+		foreach ( (array) $rows as $row ) {
+			$out[] = [ 'id' => (int) $row['propstack_id'], 'slug' => (string) $row['slug'], 'lastmod' => (string) $row['lastmod'] ];
+		}
+		return $out;
+	}
+
+	/** @param list<int> $publicStatusIds */
+	public function countSitemap( array $publicStatusIds ): int {
+		$where = $this->sitemapWhere( $publicStatusIds );
+		if ( null === $where ) {
+			return 0;
+		}
+		[ $sql, $params ] = $where;
+		return (int) $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$this->table} WHERE {$sql}", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/** Neueste lastmod aller Sitemap-Objekte (UTC) oder null. @param list<int> $publicStatusIds */
+	public function sitemapLastModified( array $publicStatusIds ): ?string {
+		$where = $this->sitemapWhere( $publicStatusIds );
+		if ( null === $where ) {
+			return null;
+		}
+		[ $sql, $params ] = $where;
+		$value            = $this->db->get_var( $this->db->prepare( "SELECT MAX(COALESCE(content_changed_at, remote_updated_at)) FROM {$this->table} WHERE {$sql}", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return null === $value || '' === $value ? null : (string) $value;
+	}
+
+	/** @return array{0: string, 1: list<int|string>}|null */
+	private function sitemapWhere( array $publicStatusIds ): ?array {
+		$publicStatusIds = array_values( array_filter( array_map( 'intval', $publicStatusIds ), static fn ( $id ) => $id > 0 ) );
+		if ( [] === $publicStatusIds ) {
+			return null;
+		}
+		$sql = "state = %s AND data IS NOT NULL AND slug <> '' AND status_id IN (" . implode( ',', array_fill( 0, count( $publicStatusIds ), '%d' ) ) . ')';
+		return [ $sql, array_merge( [ StoredProperty::STATE_ACTIVE ], $publicStatusIds ) ];
+	}
+
 	/** Rohzeilen für `wp psl audit`. @return iterable<array{propstack_id: string, state: string, status_id: ?string, data: ?string}> */
 	public function auditRows(): iterable {
 		$offset = 0;

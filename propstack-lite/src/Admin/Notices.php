@@ -33,6 +33,9 @@ final class Notices {
 		if ( ! \PropstackLite\Leads\Cf7Integration::isAvailable() ) {
 			$messages[] = [ 'warning', 'Contact Form 7 ist nicht aktiv. Immobilienanfragen sind derzeit deaktiviert.' ];
 		}
+		if ( count( \PropstackLite\Seo\SeoPlugins::active() ) > 1 ) {
+			$messages[] = [ 'warning', 'Mehrere SEO-Plugins aktiv. Für Propstack-Detailseiten wird nur ' . \PropstackLite\Seo\SeoPlugins::LABELS[ \PropstackLite\Seo\SeoPlugins::mode() ] . ' integriert.' ];
+		}
 		$state = new SyncState();
 		if ( $state->hasUnresolvedError() ) {
 			$messages[] = [ 'error', 'Propstack Lite: Der letzte Sync ist fehlgeschlagen – ' . ( $state->get()['last_error'] ?? '' ) ];

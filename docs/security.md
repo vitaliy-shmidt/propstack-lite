@@ -40,6 +40,8 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 - XSS-Tests Phase 3: Payloads in Beschreibung, Ausstattung, Lage, Sonstiges, Provisionshinweis, Maklername/-position, Bildtiteln (inkl. Attribut-Ausbruch `"` und `'`) sowie im Status-Label (über Filter) erzeugen keinen ausführbaren Code – **getestet (HTTP)**.
 - Interne Felder: `contract_type` (Maklerauftrag) zusätzlich auf der Verbotsliste; interne Broker-Felder, CRM-IDs, PriceHubble-Zugang, Notizen, Exposé-Link und Objektnummer erscheinen nicht im HTML – **getestet**.
 - Fehlerdetails nie öffentlich: Besucher sehen generische Meldungen; Details nur im Admin (Sync-Status) und im Debug-Log – **umgesetzt**.
+- SEO-Head (Phase 5): Title `esc_html`, Meta-Inhalte `esc_attr`, Canonical/`og:url`/Bilder `esc_url`; JSON-LD per `wp_json_encode` mit `JSON_HEX_TAG|AMP|APOS|QUOT` (kein `</script>`-Ausbruch). Alle SEO-Textwerte zusätzlich markup-frei (`SeoService::plain()`), Bild-URLs nur gültiges HTTPS ohne Anführungszeichen/Klammern/Leerraum – auch für Werte, die an Yoast/Rank Math gehen. XSS-Payloads direkt im Store in Core-, Yoast- und Rank-Math-Modus nicht ausführbar – **getestet (HTTP)**.
+- SEO-Datenschutz: bei `hide_address` keine Straße/Koordinaten in Title, Description, OG oder JSON-LD; keine privaten/Exposé-ausgeschlossenen Bilder, keine Grundrisse als `og:image`; `offeredBy` nur aus Website-Daten, kein Makler – **getestet**.
 
 ## Eingaben, Berechtigungen, Nonces
 

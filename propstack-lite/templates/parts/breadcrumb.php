@@ -1,6 +1,6 @@
 <?php
 /**
- * Brotkrümelnavigation (strukturierte Daten folgen in Phase 5).
+ * Brotkrümelnavigation (strukturierte Daten: BreadcrumbList im JSON-LD der SEO-Schicht, siehe docs/seo.md).
  * Überschreibbar unter {theme}/propstack-lite/parts/breadcrumb.php.
  *
  * @var array $vars view

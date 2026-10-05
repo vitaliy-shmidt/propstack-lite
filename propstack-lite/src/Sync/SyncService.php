@@ -144,6 +144,7 @@ final class SyncService {
 				$this->state->recordSuccess( $result, $now );
 			}
 			$this->logger->info( $result->summary() );
+			do_action( 'psl_sync_finished', $result ); // z. B. Sitemap-Caches der SEO-Plugins invalidieren
 		} catch ( ApiException $e ) {
 			$this->fail( $result, $e->getMessage(), $started, $now );
 		} catch ( \Throwable $e ) {

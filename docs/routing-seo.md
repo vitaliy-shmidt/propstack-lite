@@ -1,6 +1,6 @@
 # Routing und SEO
 
-Stand: Phase 2 (2026-10-05). Routing, Statuscodes, Canonical und Robots-Grundlagen sind **implementiert**. Meta Description, Open Graph, JSON-LD, Sitemap und Yoast/Rank-Math-Adapter sind **Geplant (Phase 5)**.
+Stand: Phase 5 (2026-10-06). Routing, Statuscodes und Kanonisierung (Phase 2) sowie Title, Description, Canonical, Robots, Open Graph, JSON-LD, Sitemap und Yoast/Rank-Math-Integration (Phase 5) sind **implementiert**. Details zu SEO: [seo.md](seo.md).
 
 Detailseiten rendern ausschließlich aus dem lokalen `PropertyStore` – **kein Besucher-Request löst einen Propstack-Request aus** (per HTTP-Test nachgewiesen, siehe [testing.md](testing.md)).
 
@@ -64,7 +64,7 @@ Die 30-Tage-Frist rechnet ab dem gespeicherten `sold_at` (UTC, erster Verkauft-Z
 - `redirect_canonical` ist für die Route deaktiviert (eigene Kanonisierung).
 - `template_include` (Priorität 99): `single-property.php` bzw. `property-gone.php`, Filter `psl_property_template`.
 - Body-Klassen: `psl-property`, `psl-property--{active|reserved|sold|gone}` (bei Avada zusätzlich `psl-theme-avada`).
-- Dokumenttitel: `document_title_parts` → Objekttitel (WordPress escaped die Teile); 410: „Immobilie nicht mehr verfügbar“.
+- Dokumenttitel, Canonical, Robots-Meta: seit Phase 5 aus der SEO-Schicht ([seo.md](seo.md)); der Controller setzt nur noch den Header `X-Robots-Tag`.
 
 ## Templates und Hooks
 
@@ -72,25 +72,14 @@ Seit Phase 3 vollständig beschrieben in [frontend.md](frontend.md): Template-Hi
 
 Header/Footer: klassische Themes über `get_header()`/`get_footer()`, Block-Themes über die Template-Parts `header`/`footer` (getestet mit Twenty Twenty-One und Twenty Twenty-Five).
 
-## SEO-Basis (Phase 2, implementiert)
+## SEO (Phase 5, implementiert)
 
-- **Canonical:** genau ein `<link rel="canonical">` mit der absoluten kanonischen URL auf 200-Seiten (auch in der Verkauft-Phase); keiner auf 404/410.
-- **Robots:** Verkauft-Phase und 410 → `noindex, follow` über die WordPress-Robots-API (`wp_robots`) **und** HTTP-Header `X-Robots-Tag` (wirkt unabhängig von SEO-Plugins).
-- **Statuscodes:** 200/301/404/410 wie oben.
-- **Duplicate Content:** jeder abweichende Pfad → 301.
+Vollständig beschrieben in [seo.md](seo.md). Kurzfassung:
 
-**Bekanntes Risiko (nicht verifiziert):** Ist Yoast SEO oder Rank Math aktiv, könnten diese für die Route eigene (falsche) Canonical-/Robots-Tags ausgeben. Abstimmung über Adapter folgt in Phase 5.
-
-## SEO-Ausbau (Geplant, Phase 5)
-
-| Element | Regel |
-|---|---|
-| `<title>` | `{Zimmer}-Zimmer-{Objektart} {kaufen|mieten} in {Ort/Ortsteil} | Picaflor Immobilien`, Fallbacks, ca. 60 Zeichen; Propstack-Titel nur als H1 |
-| Meta Description | aus Objektart, Vermarktung, Ort, Zimmer, Fläche, Preis/„Preis auf Anfrage“, max. 2 Merkmale; ≤ 155 Zeichen |
-| Open Graph | `og:type=website`, `og:title`, `og:description`, `og:url`, `og:image`, `og:locale=de_DE`, `twitter:card` |
-| JSON-LD | `RealEstateListing` + `Offer` + `Apartment`/`House`/`Place` + `PostalAddress` (bei verborgener Adresse nur PLZ/Ort), nur vorhandene Werte |
-| Sitemap | eigener Provider, `lastmod = content_changed_at`, nur öffentliche aktive Objekte; Adapter Core/Yoast/Rank Math |
-| Robots Übersicht | gefilterte Übersicht `noindex,follow`, Pagination mit Self-Canonical |
+- **Canonical:** genau einer auf 200-Seiten = `UrlGenerator::canonicalUrl()`, unabhängig von UTM/`gclid`; keiner auf 404/410. (Yoast lässt ihn auf noindex-Seiten der Verkauft-Phase weg.)
+- **Robots:** aktiv/reserviert `index, follow`; Verkauft-Phase und 410 `noindex, follow` als Meta **und** HTTP-Header `X-Robots-Tag` (wirkt unabhängig von SEO-Plugins); 404 normal.
+- **Title/Description/OG/Twitter/JSON-LD/Sitemap:** zentral im `Seo\SeoService`, ausgegeben vom Plugin selbst (Core) oder über Yoast/Rank Math (Priorität Yoast > Rank Math > Core).
+- **Statuscodes:** 200/301/404/410 wie oben; 410 ohne Weiterleitung, Legacy-URLs weiterhin 301.
 
 Warum 410 statt Redirect auf die Übersicht: Massen-Redirects auf eine Übersicht wertet Google als Soft-404; 410 signalisiert dauerhafte Entfernung und wird schneller deindexiert.
 
@@ -99,4 +88,4 @@ Warum 410 statt Redirect auf die Übersicht: Massen-Redirects auf eine Übersich
 - Unterseiten der WordPress-Seite `/immobilien/`, deren Slug auf `-{Zahl}` endet, werden vom Router überdeckt.
 - Permalink-Strukturen mit `/index.php/`-Präfix (PATHINFO) sind nicht getestet.
 - Ähnliche Immobilien, Galerie, Ausstattung, Energie, Grundrisse: Phase 3. Kontaktformular: Phase 4.
-- Avada, Yoast/Rank Math und ein Page-Cache-Plugin sind nicht gegen reale Installationen getestet.
+- Avada und ein Page-Cache-Plugin sind nicht gegen reale Installationen getestet; Yoast 28.6 und Rank Math 1.0.279 nur in der Testinstanz.
