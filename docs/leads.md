@@ -51,6 +51,23 @@ Feldnamen sind im Admin zuordenbar (**Feldzuordnung**); Standard:
 
 **Keine** Newsletter- oder Immobilien-Mailing-Checkboxen (nicht freigegeben). Mail-Einstellungen im CF7-Formular: Betreff frei, Absender = Adresse der eigenen Domain, Body `[_psl_propstack_block]`, empfohlen `Reply-To: [your-email]`. Der Empfänger im Formular wird durch die Plugin-Einstellung ersetzt. Besucher-Meldungen (Erfolg, Fehler) kommen aus den CF7-Formularmeldungen (dort auf Deutsch pflegen); bei abgelehnten Anfragen setzt das Plugin: „Die Anfrage konnte leider nicht versendet werden. Bitte versuchen Sie es später erneut.“
 
+### Formularmeldungen (deutsch, Sie-Form) – vor dem Livegang setzen
+
+CF7 kopiert die Standardmeldungen **einmalig beim Anlegen** eines Formulars in dieses Formular. Wurde das Formular ohne deutsches CF7-Sprachpaket angelegt, bleiben sie englisch („Thank you for your message…“); das offizielle Paket `de_DE` duzt („deine Nachricht“), die Plugin-Meldung siezt. Empfehlung für Picaflor (CF7 → Formular → Reiter „Meldungen“):
+
+| Meldung | Text |
+|---|---|
+| Erfolgreich gesendet | Vielen Dank für Ihre Anfrage. Wir melden uns schnellstmöglich bei Ihnen. |
+| Senden fehlgeschlagen | Ihre Anfrage konnte leider nicht gesendet werden. Bitte versuchen Sie es später erneut oder rufen Sie uns an. |
+| Validierungsfehler | Bitte prüfen Sie Ihre Angaben in den markierten Feldern. |
+| Spam | Ihre Anfrage konnte leider nicht gesendet werden. Bitte versuchen Sie es später erneut. |
+| Zustimmung fehlt | Bitte bestätigen Sie die Einwilligung zur Verarbeitung Ihrer Angaben. |
+| Pflichtfeld | Bitte füllen Sie dieses Feld aus. |
+| Ungültige E-Mail | Bitte geben Sie eine gültige E-Mail-Adresse ein. |
+| Ungültige Telefonnummer | Bitte geben Sie eine gültige Telefonnummer ein. |
+
+Hinweis: Mit `acceptance` sperrt CF7 den Absenden-Button, bis die Zustimmung angehakt ist (Pflichtfeld-Hinweise erscheinen beim Verlassen der Felder). Im RC-Test (2026-10-06) mit echtem CF7 6.1.7 im Browser geprüft: Validierung, Sie-Meldungen, `mail_sent`, Mail mit `ps-kontaktanfrage`, Reply-To, nur Kontakterlaubnis.
+
 ## Einstellungen (Einstellungen → Propstack Lite → Immobilienanfragen)
 
 | Einstellung | Validierung |
@@ -177,6 +194,7 @@ Vorgaben der Freigabe (2026-10-06): genau **ein** synthetischer Testkontakt („
 | Datum | Ergebnis | Workflow | Zuordnung | Quelle | Besonderheiten |
 |---|---|---|---|---|---|
 | 2026-10-06 | **Nicht durchgeführt** – keine Anfrage gesendet | nicht verifizierbar | nicht verifizierbar | nicht verifizierbar | Voraussetzungen nicht prüfbar, siehe unten |
+| 2026-10-06 (RC-Abnahme) | **BLOCKED** – keine Anfrage gesendet | nicht verifizierbar | nicht verifizierbar | nicht verifizierbar | erneut geprüft: Kontakte/Quellen/Aktivitätstypen/Hooks/Makler weiter 401, Propstack-Adresse unbekannt (Platzhalter), kein Staging-Mailtransport |
 
 Gründe (Prüfung vor dem Senden, nur lesend):
 
@@ -184,5 +202,7 @@ Gründe (Prüfung vor dem Senden, nur lesend):
 - **Kein Prüfzugriff auf das CRM:** Der vorhandene API-Key ist auf Objekte/Status/Projekte beschränkt (`contacts`, `contact_sources`, `activity_types`, `hooks`, `brokers` → 401). Postfachverbindung, Automatisierung „Neue Portalanfrage“, Kontaktquelle und das Ergebnis (Kontakt/Zuordnung) wären nicht überprüfbar.
 - **Kein Mailtransport** in der lokalen Testinstanz (PHP `mail()` ohne SMTP).
 - Erfüllt: Formular und Plugin-Einstellungen „bereit“, Testobjekt öffentlich und anfragbar.
+
+**Fehlende externe Informationen (Picaflor/Propstack-Admin):** (1) Adresse des mit Propstack verbundenen Anfrage-Postfachs, (2) Bestätigung, dass die Automatisierung „Neue Portalanfrage“ für dieses Postfach aktiv ist, (3) gewünschte Kontaktquelle und wie Propstack sie zuordnet, (4) Staging mit funktionierendem SMTP-Versand, (5) Prüfmöglichkeit in Propstack (UI-Zugang oder API-Key mit Leserechten auf Kontakte).
 
 Nachholen, sobald Propstack-Postfachadresse bekannt, Staging mit SMTP vorhanden und eine Prüfung in Propstack (UI oder Key mit Lese-Rechten auf Kontakte) möglich ist.

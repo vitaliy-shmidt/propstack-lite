@@ -75,6 +75,7 @@ Suchmaschine ─► Sitemap (Core/Yoast/Rank Math) ─► Seo\Sitemap\SitemapSou
 | `Rest\WebhookController` | `POST /wp-json/propstack/v1/webhook` → plant Sync (kein Sync im Request) |
 | `Cli\Command` | `wp psl sync|status|statuses|audit` |
 | `Support\Slugger`, `Logger`, `Clock` | Slugs, Logging ohne PII, testbare Zeit |
+| `Support\PageCachePurger` | leert Full-Page-Caches (WP Super Cache, W3TC, WP Rocket, LiteSpeed, WP Fastest Cache, SiteGround; Action `psl_purge_page_cache`) nach Sync mit Bestandsänderungen und nach Einstellungsänderungen |
 
 ## Designentscheidungen
 

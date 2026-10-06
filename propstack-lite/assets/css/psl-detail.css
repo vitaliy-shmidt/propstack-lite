@@ -238,7 +238,7 @@
 
 .psl-detail-wrap .psl-summary__facts {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 90px), 1fr));
 	gap: 12px;
 	margin: 0;
 }
@@ -250,10 +250,17 @@
 	font-size: 0.85em;
 }
 
+.psl-detail-wrap .psl-summary__fact {
+	min-width: 0;
+}
+
 .psl-detail-wrap .psl-summary__fact dd {
 	margin: 2px 0 0;
 	padding: 0;
 	font-weight: 600;
+	/* Lange deutsche Komposita (z. B. „Dachgeschosswohnung“) dürfen die Spalte nicht sprengen. */
+	overflow-wrap: anywhere;
+	hyphens: auto;
 }
 
 /* -------------------------------------------------------------- Sektionen */
@@ -315,10 +322,13 @@
 }
 
 .psl-detail-wrap .psl-fact-list__row dd {
+	min-width: 0;
 	margin: 0;
 	padding: 0;
 	font-weight: 600;
 	text-align: right;
+	overflow-wrap: anywhere;
+	hyphens: auto;
 }
 
 .psl-fact-list--energy {

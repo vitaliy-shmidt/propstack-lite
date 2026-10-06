@@ -251,11 +251,13 @@ final class SeoService {
 			$place['geo'] = [ '@type' => 'GeoCoordinates', 'latitude' => $p->address->lat, 'longitude' => $p->address->lng ];
 		}
 
-		$crumbs = [ [ 'name' => 'Immobilien', 'item' => $overviewUrl ] ];
-		if ( null !== $p->address->city ) {
-			$crumbs[] = [ 'name' => $p->address->city ];
-		}
-		$crumbs[] = [ 'name' => $name, 'item' => $canonical ];
+		// Jeder Eintrag mit URL (Google: `item` Pflicht außer beim letzten) – der Ort hat keine eigene Seite
+		// und erscheint daher nur in der sichtbaren Breadcrumb, nicht im Schema.
+		$crumbs = [
+			[ 'name' => 'Startseite', 'item' => $this->homeUrl ],
+			[ 'name' => 'Immobilien', 'item' => $overviewUrl ],
+			[ 'name' => $name, 'item' => $canonical ],
+		];
 		$items    = [];
 		foreach ( $crumbs as $i => $crumb ) {
 			$items[] = [ '@type' => 'ListItem', 'position' => $i + 1 ] + $crumb;

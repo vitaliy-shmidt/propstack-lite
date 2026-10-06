@@ -67,6 +67,16 @@ In der Testinstanz installiert (standardmäßig inaktiv): Yoast SEO 28.6, Rank M
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
 
+## Ergebnisse Release-Candidate-Abnahme (2026-10-06, 0.4.1)
+
+Bericht: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md).
+
+- Unit: 130 Tests, 547 Assertions – grün (auch unter PHP 8.2.12).
+- Integration: 20 Tests, 93 Assertions – grün (neu: `LegacyMigrationTest`, `PageCachePurgerTest`).
+- HTTP je Modus – grün: Core 63 Tests/489 Assertions (23 übersprungen), Yoast 63/484 (24), Rank Math 63/496 (22), Konflikt 63/356 (27). Neu: ungültige IDs → 404, Rank-Math-Breadcrumb-Pfad, Breadcrumb-Einträge mit URL, Yoast ohne Website-Standardbild auf Objekten ohne Foto.
+- Zusätzlich manuell/skriptgesteuert: frische Installation über die Admin-Oberfläche, Aktivierung/Deaktivierung/Reaktivierung/Deinstallation, Upgrade 0.2.0 und 0.3.0 → 0.4.1, Sync-Fehlerfälle (Ausfall, 401, 429, 503, kaputtes JSON, Lock), Lebenszyklus über die Fake-API, 53 synthetische Objekte + 500 Lastzeilen, Browser (Edge) 390/768/1024/1366 px, Lightbox mit 24 Bildern, ohne JS, CF7 im Browser, Lighthouse, WP Super Cache, Security-Smoke.
+- Werkzeuge (nur Testinstanz, nicht im Repository): Fake-Propstack-API als mu-plugin (Option `rc_fake_api`, Daten aus `wp-content/rc-fake-units.json`), Generator für synthetische Objekte, Puppeteer-Skripte.
+
 ## Ergebnisse Phase 5 (2026-10-06)
 
 - Unit: 130 Tests, 543 Assertions – grün (neu: `SeoServiceTest` – Title inkl. Beispiel der Vorgabe, Kürzung ohne Wortschnitt, Objektart/Vermarktung, keine Straße; Description mit Bausteinen, ≤ 160 Zeichen UTF-8, ganze Sätze, kein HTML, nie „0 €“; Robots je Zustand und 410; Canonical/`og:url`; OG/Twitter mit/ohne Bild, keine privaten/Grundriss-Bilder; JSON-LD Kauf/Miete, nie `price: 0`, verborgene Adresse ohne Straße/Geo, `Place`-Fallback, Agentur nur aus Site-Daten, BreadcrumbList; Klartext-Bereinigung).

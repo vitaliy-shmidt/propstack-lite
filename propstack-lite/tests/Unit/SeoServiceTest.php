@@ -252,7 +252,11 @@ final class SeoServiceTest extends TestCase {
 
 		$crumbs = self::node( $seo, 'BreadcrumbList' )['itemListElement'];
 		$this->assertSame( [ 1, 2, 3 ], array_column( $crumbs, 'position' ) );
-		$this->assertSame( self::OVERVIEW, $crumbs[0]['item'] );
+		$this->assertSame( 'https://example.test/', $crumbs[0]['item'] );
+		$this->assertSame( self::OVERVIEW, $crumbs[1]['item'] );
+		foreach ( $crumbs as $crumb ) {
+			$this->assertNotEmpty( $crumb['item'] ?? null, 'Google: jeder Eintrag braucht eine URL' );
+		}
 		$this->assertSame( self::CANONICAL, $crumbs[2]['item'] );
 	}
 

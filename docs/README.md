@@ -8,6 +8,7 @@
 | Phase 3 – Detailseite | abgeschlossen (2026-10-05) |
 | Phase 4 – Leads | abgeschlossen (2026-10-05) |
 | Phase 5 – SEO | abgeschlossen (2026-10-06) |
+| Release-Candidate-Abnahme | abgeschlossen (2026-10-06), **PASS WITH OPEN ITEMS** – [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md) |
 | Phase 6 – Tracking | geplant |
 | Phase 7 – Filter/UX | geplant |
 | Phase 8 – Hardening | geplant |
@@ -65,11 +66,15 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 | [security.md](security.md) | verbindliche Sicherheitsregeln |
 | [testing.md](testing.md) | Teststrategie, Testumgebung, Ergebnisse, Checklisten |
 | [changelog.md](changelog.md) | Entwicklungsfortschritt je Phase |
+| [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md) | Release-Candidate-Abnahme: Ergebnisse, Bugs, offene Punkte vor Staging |
 | [decisions/](decisions/) | Architekturentscheidungen (ADRs) |
 
 ## Bekannte offene Punkte
 
-- **Keine reale WordPress-Testumgebung** mit Avada, CF7 und SEO-Plugin. Getestet gegen eine Wegwerf-Instanz (WordPress 7.1.2 im Unterverzeichnis `/Picaflor/`, Twenty Twenty-One/-Five). Avada-, CF7- und SEO-Integration gelten erst mit realer Testumgebung als verifiziert.
+Vollständige Liste vor Staging/Produktion: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md).
+
+- **Avada nicht verifiziert:** Getestet gegen Wegwerf-Instanzen (WordPress 7.1.2 in `/Picaflor/` und frisch in `/rc-site/`, Twenty Twenty-One/-Five, CF7 6.1.7, Yoast 28.6, Rank Math 1.0.279, WP Super Cache 3.1.4, PHP 8.3 und 8.2). Avada und die tatsächliche SEO-/Cache-Konfiguration der Live-Site gelten erst mit Staging als verifiziert.
+- Übersicht ohne Blätterfunktion (Phase 7): Objekte jenseits von `per` erscheinen nur über die Sitemap; `per` auf der Live-Seite ausreichend hoch setzen.
 - SEO-Integration mit Yoast SEO 28.6 und Rank Math 1.0.279 nur in der Testinstanz geprüft; andere SEO-Plugins (AIOSEO, SEOPress …) werden nicht erkannt ([seo.md](seo.md)).
 - Propstack-E2E-Test der Anfragen steht weiter aus ([leads.md](leads.md)).
 - Der API-Key hat nur Leserechte auf Objekte, Status und Projekte. Webhooks (`POST /v1/hooks`) muss ein Propstack-Admin registrieren.

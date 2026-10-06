@@ -12,23 +12,14 @@ namespace PropstackLite\Seo\Sitemap;
  */
 final class SitemapCache {
 
-	/** Zähler, deren Änderung die Sitemap beeinflusst. */
-	private const RELEVANT = [ 'inserted', 'updated', 'sold', 'removed', 'purged', 'reconciled' ];
-
 	public function register(): void {
 		add_action( 'psl_sync_finished', [ $this, 'afterSync' ] );
 		add_action( 'update_option_' . \PropstackLite\Settings::OPTION, [ self::class, 'flush' ] );
 	}
 
 	public function afterSync( mixed $result ): void {
-		if ( ! $result instanceof \PropstackLite\Sync\SyncResult || ! $result->isOk() ) {
-			return;
-		}
-		foreach ( self::RELEVANT as $counter ) {
-			if ( ( $result->counts[ $counter ] ?? 0 ) > 0 ) {
-				self::flush();
-				return;
-			}
+		if ( \PropstackLite\Support\PageCachePurger::hasRelevantChanges( $result ) ) {
+			self::flush();
 		}
 	}
 

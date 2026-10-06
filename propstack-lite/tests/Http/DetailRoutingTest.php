@@ -170,6 +170,8 @@ final class DetailRoutingTest extends IntegrationTestCase {
 		$this->check( 'ohne Trailing Slash', rtrim( $canonical, '/' ), 301, $canonical );
 		$this->check( 'Großschreibung im Slug', str_replace( '/immobilien/', '/immobilien/X', $canonical ), 301, $canonical );
 		$this->check( 'unbekannte ID', $this->base . '/immobilien/irgendwas-' . self::ID_UNKNOWN . '/', 404 );
+		$this->check( 'ID 0 (kein Soft-404)', $this->base . '/immobilien/x-0/', 404 );
+		$this->check( 'ungültiger Query-Parameter psl_property', $this->base . '/?psl_property=abc', 404 );
 		$this->check( 'reserviert', $this->url( self::ID_RESERVED ), 200 );
 		$this->check( 'verkauft/vermietet ≤ 30 Tage', $this->url( self::ID_SOLD_RENT ), 200 );
 		$this->check( 'verkauft > 30 Tage', $this->url( self::ID_SOLD_OLD ), 410 );

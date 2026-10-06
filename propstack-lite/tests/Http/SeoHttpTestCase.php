@@ -270,6 +270,10 @@ abstract class SeoHttpTestCase extends IntegrationTestCase {
 		$this->assertCount( 1, $agent );
 		$this->assertSame( wp_strip_all_tags( (string) get_bloginfo( 'name' ) ), $agent[0]['name'] );
 		$this->assertCount( 1, self::nodesOfType( $nodes, 'BreadcrumbList' ), 'genau eine BreadcrumbList' );
+		foreach ( self::nodesOfType( $nodes, 'BreadcrumbList' )[0]['itemListElement'] as $item ) {
+			$url = is_array( $item['item'] ?? null ) ? ( $item['item']['@id'] ?? null ) : ( $item['item'] ?? null );
+			$this->assertNotEmpty( $url, 'BreadcrumbList: jeder Eintrag braucht eine URL (Google Rich Results)' );
+		}
 		$json = (string) json_encode( $nodes );
 		$this->assertDoesNotMatchRegularExpression( '/"price":\s*"?0(\.0+)?"?[,}]/', $json, 'nie price 0' );
 	}

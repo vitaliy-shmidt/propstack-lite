@@ -48,6 +48,7 @@ Entscheidung: `Routing\RouteResolver` (reine Logik, nur gespeicherter Zustand + 
 | entfernt | `removed` | **410** | `noindex, follow` | wie oben |
 | aktiv gespeichert, Status nicht mehr öffentlich (Einstellung geändert) | `active`, Status ∉ öffentlich | **410** | `noindex, follow` | wie oben (bis zum nächsten Sync → `removed`) |
 | unbekannte ID | keine Zeile | **404** | – | Theme-404 (`set_404()`), `nocache_headers()` |
+| ungültige ID (`/immobilien/x-0/`, `?psl_property=abc`) | – | **404** | – | Theme-404 statt Startseite mit 200 (Soft-404 behoben in 0.4.1) |
 | Legacy mit bekannter ID | Zeile vorhanden (beliebiger Zustand) | **301** | – | → kanonische URL (dort ggf. 410) |
 | Legacy mit unbekannter/ungültiger/fehlender ID | – | **404** | – | Theme-404 |
 

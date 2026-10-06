@@ -1,5 +1,25 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-06 – Release-Candidate-Abnahme, Fixes (Version 0.4.1)
+
+Abnahmebericht: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md). Keine Phase-6-Funktionalität.
+
+**Bugs behoben**
+- **P1 Upgrade aus 0.2.x:** Bei Update per ZIP-Upload/FTP lief die Settings-Migration nicht (nur Aktivierungs-Hook) → nach dem Update wäre kein Objekt öffentlich gewesen. Jetzt `Settings::maybeMigrateLegacy()` beim Plugin-Start (idempotent) + zeitnaher Voll-Sync.
+- **P2 Full-Page-Cache:** Verkaufte/entfernte Objekte blieben bis zum Cache-Ablauf in Sitemap (nachgewiesen mit WP Super Cache) bzw. bei Cache-Plugins, die alle URLs cachen, auf Detailseiten mit Formular und `index`. Neu `Support\PageCachePurger` (nach Sync mit Bestandsänderungen und nach Einstellungsänderungen; Action `psl_purge_page_cache`).
+- **P2 Layout:** Lange deutsche Komposita in Kurzfakten/Eckdaten (z. B. „Dachgeschosswohnung“) erzeugten horizontalen Scroll bei 1024 px (55 px) und 390 px (8 px).
+- **P2 Schema:** BreadcrumbList enthielt einen Eintrag ohne URL (Ort) – Rich-Results-Fehler. Jetzt Startseite → Immobilien → Objekt, alle mit URL.
+- **P2 Rank Math:** Mit aktivierten Rank-Math-Breadcrumbs bestand dessen BreadcrumbList nur aus „Home“ → Pfad über `rank_math/frontend/breadcrumb/items`.
+- **P3 Yoast:** Objekte ohne Foto bekamen Yoasts Website-Standardbild als `og:image` → OG-Bilder werden in der Presentation exakt gesetzt.
+- **P3 Soft-404:** `/immobilien/x-0/` und `?psl_property=abc` lieferten die Startseite mit 200 → jetzt 404.
+- **P3 Performance:** Erste Kartenreihe der Übersicht nicht mehr `loading="lazy"` (LCP-Bild); Lighthouse mobil 91 → 93.
+
+**Neue Dateien:** `src/Support/PageCachePurger.php`, `tests/Integration/LegacyMigrationTest.php`, `tests/Integration/PageCachePurgerTest.php`, `docs/acceptance-rc-2026-10-06.md`.
+
+**DB-Migrationen:** keine Schemaänderung.
+
+**Breaking Changes:** keine. Template `parts/card.php` erhält zusätzlich `index`; Theme-Overrides ohne diese Variable funktionieren unverändert (Bilder dann `lazy`).
+
 ## 2026-10-06 – Phase 5: SEO und Sitemaps für Detailseiten (Version 0.4.0)
 
 **Propstack-E2E-Test (Anfragen):** geprüft, **nicht gesendet** – Propstack-Postfachadresse unbekannt, kein Lese-/Prüfzugriff auf Kontakte/Quellen/Automatisierungen (Key: 401), kein Mailtransport in der Testinstanz. Protokoll in [leads.md](leads.md).

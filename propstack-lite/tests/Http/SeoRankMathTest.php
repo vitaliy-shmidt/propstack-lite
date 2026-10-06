@@ -27,6 +27,16 @@ final class SeoRankMathTest extends SeoHttpTestCase {
 		$this->assertSame( $this->url( self::ID_ACTIVE ), $webpage[0]['url'], 'WebPage-URL = Canonical' );
 	}
 
+	/** Rank Math liefert für die Route sonst nur „Home“; der Plugin-Pfad wird über frontend/breadcrumb/items ergänzt. */
+	public function test_rank_math_breadcrumb_contains_trail(): void {
+		$canonical = $this->url( self::ID_ACTIVE );
+		$crumbs    = self::nodesOfType( self::schemaNodes( self::head( $this->get( $canonical )['body'] ) ), 'BreadcrumbList' );
+		$this->assertCount( 1, $crumbs );
+		$ids = array_map( static fn ( $i ) => is_array( $i['item'] ?? null ) ? $i['item']['@id'] : ( $i['item'] ?? null ), $crumbs[0]['itemListElement'] );
+		$this->assertContains( $this->base . '/immobilien/', $ids );
+		$this->assertSame( $canonical, end( $ids ), 'letzter Eintrag = Objekt' );
+	}
+
 	public function test_states(): void {
 		$this->assertReservedIndexable();
 		$this->assertSoldNoindex( false );

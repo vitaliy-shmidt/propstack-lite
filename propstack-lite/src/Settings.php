@@ -224,6 +224,21 @@ final class Settings {
 	}
 
 	/**
+	 * Migration beim Plugin-Start nachholen, falls noch 0.2.x-Daten vorhanden sind. Nötig, weil ein
+	 * Update per ZIP-Upload („Version ersetzen“) oder FTP den Aktivierungs-Hook nicht auslöst.
+	 * Im Normalbetrieb nur ein Array-Schlüsselvergleich auf der ohnehin geladenen Option.
+	 */
+	public static function maybeMigrateLegacy(): bool {
+		$stored = get_option( self::OPTION, null );
+		$legacy = is_array( $stored ) && array_intersect( self::LEGACY_KEYS, array_keys( $stored ) );
+		if ( $legacy || false !== get_option( 'propstack_lite_cache_salt', false ) ) {
+			self::migrateLegacy();
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Migration von 0.2.x: übernimmt `status=` aus den alten Default-Query-Params als
 	 * öffentliche Status und entfernt veraltete Einstellungen, Cache-Salt und Transients.
 	 */

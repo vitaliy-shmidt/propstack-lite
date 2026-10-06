@@ -13,8 +13,8 @@ defined( 'ABSPATH' ) || exit;
 <div class="psl-list">
 	<div class="psl-grid">
 		<?php
-		foreach ( $vars['cards'] as $card ) {
-			echo $loader->render( 'parts/card.php', [ 'card' => $card, 'heading' => $vars['heading'] ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Template escaped selbst.
+		foreach ( $vars['cards'] as $i => $card ) {
+			echo $loader->render( 'parts/card.php', [ 'card' => $card, 'heading' => $vars['heading'], 'index' => $i ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Template escaped selbst.
 		}
 		?>
 	</div>

@@ -43,6 +43,8 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 - SEO-Head (Phase 5): Title `esc_html`, Meta-Inhalte `esc_attr`, Canonical/`og:url`/Bilder `esc_url`; JSON-LD per `wp_json_encode` mit `JSON_HEX_TAG|AMP|APOS|QUOT` (kein `</script>`-Ausbruch). Alle SEO-Textwerte zusätzlich markup-frei (`SeoService::plain()`), Bild-URLs nur gültiges HTTPS ohne Anführungszeichen/Klammern/Leerraum – auch für Werte, die an Yoast/Rank Math gehen. XSS-Payloads direkt im Store in Core-, Yoast- und Rank-Math-Modus nicht ausführbar – **getestet (HTTP)**.
 - SEO-Datenschutz: bei `hide_address` keine Straße/Koordinaten in Title, Description, OG oder JSON-LD; keine privaten/Exposé-ausgeschlossenen Bilder, keine Grundrisse als `og:image`; `offeredBy` nur aus Website-Daten, kein Makler – **getestet**.
 
+- RC-Abnahme 2026-10-06: Admin-Aktionen (Einstellungsseite, `admin-post` Sync/Status, `options.php`) anonym → Login/400, als Abonnent → 403; Webhook ohne/falscher Token 401, GET 404, korrekt 202 ohne API-Request im Request; ungültige IDs → 404 (kein Soft-404) – **getestet**.
+
 ## Eingaben, Berechtigungen, Nonces
 
 - Einstellungen über Settings API mit `sanitize_callback`, Capability `manage_options` – **umgesetzt**.

@@ -7,9 +7,10 @@ namespace PropstackLite\Seo;
  * Kein eigener Canonical/Title/OG/Robots-Output. Yoast erkennt die Route als Seitentyp „Fallback“.
  *
  * - `wpseo_frontend_presentation`: canonical/permalink der Presentation auf die kanonische URL setzen,
- *   damit Yoasts Schema-IDs (WebPage, Breadcrumb) und og:url konsistent sind
+ *   damit Yoasts Schema-IDs (WebPage, Breadcrumb) und og:url konsistent sind; OG-Bilder exakt setzen
+ *   (Objektbild oder – ohne öffentliches Bild – keines, auch nicht Yoasts Website-Standardbild)
  * - `wpseo_title`, `wpseo_metadesc`, `wpseo_canonical`, `wpseo_robots_array`
- * - `wpseo_opengraph_*`, `wpseo_add_opengraph_images`, `wpseo_twitter_*`
+ * - `wpseo_opengraph_*`, `wpseo_twitter_*`
  * - `wpseo_schema_graph`: RealEstateListing, Place/Apartment/House, RealEstateAgent ergänzen
  *   (Yoasts eigene WebPage/WebSite/BreadcrumbList bleiben – keine zweite BreadcrumbList)
  */
@@ -28,7 +29,6 @@ final class YoastAdapter {
 		add_filter( 'wpseo_opengraph_url', [ $this, 'ogUrl' ], 20 );
 		add_filter( 'wpseo_opengraph_type', [ $this, 'ogType' ], 20 );
 		add_filter( 'wpseo_og_locale', [ $this, 'ogLocale' ], 20 );
-		add_filter( 'wpseo_add_opengraph_images', [ $this, 'ogImages' ], 20 );
 		add_filter( 'wpseo_twitter_card_type', [ $this, 'twitterCard' ], 20 );
 		add_filter( 'wpseo_twitter_title', [ $this, 'twitterTitle' ], 20 );
 		add_filter( 'wpseo_twitter_description', [ $this, 'twitterDescription' ], 20 );
@@ -41,6 +41,13 @@ final class YoastAdapter {
 		if ( null !== $data && is_object( $presentation ) && null !== $data->canonical ) {
 			$presentation->canonical = $data->canonical;
 			$presentation->permalink = $data->canonical;
+		}
+		if ( null !== $data && is_object( $presentation ) && null !== $data->openGraph ) {
+			$url = $data->openGraph['image'] ?? null;
+			$presentation->open_graph_images = null === $url ? [] : [ $url => [ 'url' => $url, 'alt' => $data->openGraph['image:alt'] ?? '' ] ];
+			if ( null === $url ) {
+				$presentation->twitter_image = '';
+			}
 		}
 		return $presentation;
 	}
@@ -93,16 +100,6 @@ final class YoastAdapter {
 
 	public function ogLocale( mixed $value ): mixed {
 		return $this->og( 'locale', $value );
-	}
-
-	/** Nur das freigegebene Teilbild; ohne Bild bleibt der Container unverändert (Yoast-Fallback). */
-	public function ogImages( mixed $container ): mixed {
-		$data = $this->context->data();
-		$url  = $data?->openGraph['image'] ?? null;
-		if ( null !== $url && is_object( $container ) && method_exists( $container, 'add_image' ) ) {
-			$container->add_image( [ 'url' => $url, 'alt' => $data->openGraph['image:alt'] ?? '' ] );
-		}
-		return $container;
 	}
 
 	public function twitterCard( mixed $value ): mixed {

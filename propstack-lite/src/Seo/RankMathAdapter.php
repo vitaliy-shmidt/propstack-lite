@@ -11,6 +11,7 @@ namespace PropstackLite\Seo;
  * - `opengraph/{facebook|twitter}/add_images` (Action), `opengraph/twitter/card_type`,
  *   `opengraph/twitter/twitter_title|twitter_description`
  * - `json_ld`: RealEstateListing, Place/Apartment/House, RealEstateAgent, ggf. BreadcrumbList
+ * - `frontend/breadcrumb/items`: Pfad Startseite → Immobilien → Ort → Objekt (sonst nur „Home“)
  */
 final class RankMathAdapter {
 
@@ -32,6 +33,32 @@ final class RankMathAdapter {
 		add_filter( 'rank_math/opengraph/twitter/twitter_title', [ $this, 'twitterTitle' ], 20 );
 		add_filter( 'rank_math/opengraph/twitter/twitter_description', [ $this, 'twitterDescription' ], 20 );
 		add_filter( 'rank_math/json_ld', [ $this, 'jsonLd' ], 99, 2 );
+		add_filter( 'rank_math/frontend/breadcrumb/items', [ $this, 'breadcrumbs' ], 20 );
+	}
+
+	/**
+	 * Rank Math kennt die Route nicht und liefert nur „Home“: Pfad vollständig aus dem SeoService
+	 * übernehmen (Format: [ Name, URL, 'hide_in_schema' => bool ]).
+	 */
+	public function breadcrumbs( mixed $crumbs ): mixed {
+		$data = $this->context->data();
+		if ( null === $data || ! is_array( $crumbs ) ) {
+			return $crumbs;
+		}
+		$trail = null;
+		foreach ( $data->schemaNodes() as $node ) {
+			if ( 'BreadcrumbList' === $node['@type'] ) {
+				$trail = $node['itemListElement'];
+			}
+		}
+		if ( null === $trail ) {
+			return $crumbs;
+		}
+		$out = [];
+		foreach ( $trail as $item ) {
+			$out[] = [ (string) $item['name'], (string) ( $item['item'] ?? '' ), 'hide_in_schema' => false ];
+		}
+		return $out;
 	}
 
 	public function title( mixed $title ): mixed {

@@ -1,6 +1,6 @@
 # SEO für Immobilien-Detailseiten
 
-Stand: Phase 5 (2026-10-06), **implementiert**. Getestet in einer Wegwerf-Instanz (WordPress 7.1.2 unter `/Picaflor/`) mit **Yoast SEO 28.6** und **Rank Math 1.0.279** – jeweils einzeln, gemeinsam und ohne SEO-Plugin. Nicht gegen die Live-Site (Avada) verifiziert.
+Stand: Phase 5 (2026-10-06), **implementiert**; RC-Abnahme 2026-10-06 (0.4.1) mit voll konfiguriertem Yoast und Rank Math. Getestet in einer Wegwerf-Instanz (WordPress 7.1.2 unter `/Picaflor/`) mit **Yoast SEO 28.6** und **Rank Math 1.0.279** – jeweils einzeln, gemeinsam und ohne SEO-Plugin. Nicht gegen die Live-Site (Avada) verifiziert.
 
 Grundsatz: Alle SEO-Werte entstehen **an einer Stelle** (`Seo\SeoService`) aus dem lokalen Store. Ausgegeben werden sie je nach Umgebung von genau einem Adapter. Kein Besucher-Request – auch kein Sitemap-Abruf – löst einen Propstack-Request aus.
 
@@ -74,7 +74,7 @@ Ein Graph (`@context https://schema.org`) mit:
 | `RealEstateListing` (`{canonical}#listing`) | `url`, `name` (= H1), `description`, `datePosted`, `image` (max. 5, nur öffentliche Nicht-Grundrisse), `offers`, `about` → Objekt, `offeredBy` → Agentur, `breadcrumb` |
 | `Apartment` / `House` / `Place` (`#property`) | Typ nur bei eindeutiger Objektart, sonst `Place`; `address`, `numberOfRooms` (Wohnimmobilien), `floorSize` (m², nicht bei `Place`), `geo` nur bei öffentlicher Adresse |
 | `RealEstateAgent` (`{home}#psl-realestateagent`) | nur `name` (Website-Titel) und `url` (Startseite) – keine erfundenen Daten; der Makler ist **nie** `offeredBy` |
-| `BreadcrumbList` (`#breadcrumb`) | Immobilien → Ort → Objekt (nur, wenn das SEO-Plugin keine eigene liefert) |
+| `BreadcrumbList` (`#breadcrumb`) | Startseite → Immobilien → Objekt, **jeder Eintrag mit URL** (Google verlangt `item` außer beim letzten; der Ort hat keine eigene Seite und steht nur in der sichtbaren Breadcrumb). Nur, wenn das SEO-Plugin keine eigene liefert |
 
 - **Offer:** Kauf `price` + `priceCurrency EUR` + `businessFunction Sell`; Miete `priceSpecification` (`UnitPriceSpecification`, `unitCode MON`, Kalt- bzw. Warmmiete) + `businessFunction LeaseOut`. **Ohne bekannten Preis kein Offer – nie `price: 0`.**
 - **Verborgene Adresse:** `PostalAddress` nur mit `postalCode`, `addressLocality`, `addressRegion`, `addressCountry`; keine Straße, keine Geo-Koordinaten (getestet).
@@ -87,13 +87,13 @@ Ein Graph (`@context https://schema.org`) mit:
 | Modus | Erkennung | Wer gibt aus? | Mechanismus |
 |---|---|---|---|
 | Core | kein unterstütztes SEO-Plugin aktiv | Plugin | `pre_get_document_title` (escaped), `wp_robots`, `wp_head` (Description, Canonical, OG, Twitter, JSON-LD) |
-| Yoast | `WPSEO_VERSION` definiert | Yoast | `wpseo_frontend_presentation` (canonical/permalink der Presentation), `wpseo_title`, `wpseo_metadesc`, `wpseo_canonical`, `wpseo_robots_array`, `wpseo_opengraph_title/desc/url/type`, `wpseo_og_locale`, `wpseo_add_opengraph_images`, `wpseo_twitter_card_type/title/description/image`, `wpseo_schema_graph` |
-| Rank Math | `RANK_MATH_VERSION` **und** Registrierung gültig/übersprungen | Rank Math | `rank_math/frontend/title|description|robots|canonical`, `rank_math/opengraph/facebook/og_title|og_description|og_locale`, `rank_math/opengraph/url|type`, Actions `rank_math/opengraph/{facebook,twitter}/add_images`, `rank_math/opengraph/twitter/card_type|twitter_title|twitter_description`, `rank_math/json_ld` |
+| Yoast | `WPSEO_VERSION` definiert | Yoast | `wpseo_frontend_presentation` (canonical/permalink und OG-Bilder der Presentation), `wpseo_title`, `wpseo_metadesc`, `wpseo_canonical`, `wpseo_robots_array`, `wpseo_opengraph_title/desc/url/type`, `wpseo_og_locale`, `wpseo_twitter_card_type/title/description/image`, `wpseo_schema_graph` |
+| Rank Math | `RANK_MATH_VERSION` **und** Registrierung gültig/übersprungen | Rank Math | `rank_math/frontend/title|description|robots|canonical`, `rank_math/opengraph/facebook/og_title|og_description|og_locale`, `rank_math/opengraph/url|type`, Actions `rank_math/opengraph/{facebook,twitter}/add_images`, `rank_math/opengraph/twitter/card_type|twitter_title|twitter_description`, `rank_math/json_ld`, `rank_math/frontend/breadcrumb/items` |
 
 Hinweise aus den Tests:
 
-- **Yoast** behandelt die Route als Seitentyp „Fallback“ (kein WebPage-/BreadcrumbList-Knoten) → das Plugin ergänzt seine BreadcrumbList; gibt Yoast eine aus, wird darauf verwiesen statt dupliziert. Bei `noindex` gibt Yoast grundsätzlich **keinen Canonical** aus (Yoast-Verhalten, akzeptiert).
-- **Rank Math** lädt sein Frontend nur mit gültiger oder übersprungener Registrierung. Ohne sie gibt Rank Math nichts aus – das Plugin bleibt dann im **Core-Modus** (getestet), sonst stünden die Seiten ohne SEO-Tags da. `mainEntityOfPage` verweist auf Rank Maths WebPage.
+- **Yoast** behandelt die Route als Seitentyp „Fallback“ (kein WebPage-/BreadcrumbList-Knoten) → das Plugin ergänzt seine BreadcrumbList; gibt Yoast eine aus, wird darauf verwiesen statt dupliziert. Bei `noindex` gibt Yoast grundsätzlich **keinen Canonical** aus (Yoast-Verhalten, akzeptiert). OG-Bilder werden direkt in der Presentation gesetzt: Objektbild – oder ohne öffentliches Objektbild **keines**; Yoasts Website-Standardbild wird auf Detailseiten nicht verwendet (getestet mit gesetztem Standardbild).
+- **Rank Math** lädt sein Frontend nur mit gültiger oder übersprungener Registrierung. Ohne sie gibt Rank Math nichts aus – das Plugin bleibt dann im **Core-Modus** (getestet), sonst stünden die Seiten ohne SEO-Tags da. `mainEntityOfPage` verweist auf Rank Maths WebPage. Mit aktivierten Rank-Math-Breadcrumbs lieferte Rank Math für die Route nur „Home“ – der Pfad wird deshalb über `rank_math/frontend/breadcrumb/items` übergeben (gilt für Rank Maths BreadcrumbList und dessen sichtbare Breadcrumbs). Rank Maths Standard-OG-Bild erscheint nicht zusätzlich.
 - **Mehrere SEO-Plugins:** Admin-Hinweis (Dashboard, Plugins, Einstellungsseite) „Mehrere SEO-Plugins aktiv. Für Propstack-Detailseiten wird nur Yoast SEO integriert.“; die Einstellungsseite zeigt den Modus in der Box „SEO“. Das nicht integrierte Rank Math erhält keine Werte – mit einer Ausnahme als **Sicherheitsnetz**: Auf noindex-Seiten (Verkauft-Phase, 410) wird `noindex` auch an Rank Math gemeldet, damit es nie „index“ ausgibt. Doppelte Tags, die die beiden Plugins untereinander erzeugen, liegen außerhalb des Plugins (Website-Fehlkonfiguration).
 
 Keine Dubletten (getestet je Modus): genau ein `<title>`, eine Description, ein Canonical, ein Robots-Meta, ein OG-Set (`og:title`, `og:url`, `og:image`, `og:locale`), ein `twitter:card`, ein JSON-LD-Block mit genau einem `RealEstateListing`, eindeutigen `@id`s und aufgelösten Referenzen.
@@ -110,7 +110,7 @@ Keine Dubletten (getestet je Modus): genau ein `<title>`, eine Description, ein 
 - **Inhalt:** nur Objekte mit `state = active`, öffentlichem Status und gespeicherten Daten – genau die Seiten mit 200 + `index`. Nicht enthalten: Verkauft-Phase, entfernt, 410, nicht öffentliche Status, unbekannte IDs.
 - `loc` = `UrlGenerator::detailUrlFor()` = Canonical (inkl. `/Picaflor/`, ohne Query-Parameter); sortiert nach Propstack-ID, paginiert per `LIMIT/OFFSET`.
 - **lastmod** = `content_changed_at` (UTC; ändert sich nur, wenn sich der gespeicherte, sichtbare Inhalt ändert). Bewusst nicht `remote_updated_at`, weil Propstack diesen Zeitstempel auch bei internen CRM-Änderungen setzt (Fallback, falls leer). Core: W3C-Format; Yoast/Rank Math formatieren selbst.
-- **Caches:** Rank Math cacht Sitemaps standardmäßig, Yoast optional. Nach jedem Sync mit relevanten Änderungen (Action `psl_sync_finished`) und nach dem Speichern der Plugin-Einstellungen werden die Caches invalidiert (`Seo\Sitemap\SitemapCache`).
+- **Caches:** Rank Math cacht Sitemaps standardmäßig, Yoast optional. Nach jedem Sync mit relevanten Änderungen (Action `psl_sync_finished`) und nach dem Speichern der Plugin-Einstellungen werden die Caches invalidiert (`Seo\Sitemap\SitemapCache`). Zusätzlich leert `Support\PageCachePurger` Full-Page-Caches (WP Super Cache, W3 Total Cache, WP Rocket, LiteSpeed, WP Fastest Cache, SiteGround; Action `psl_purge_page_cache` für Server-/CDN-Caches) – sonst blieben verkaufte Objekte bis zum Cache-Ablauf in Übersicht und Sitemap (im RC-Test mit WP Super Cache nachgewiesen und behoben).
 
 ## Erweiterungspunkte
 
@@ -118,7 +118,8 @@ Keine Dubletten (getestet je Modus): genau ein `<title>`, eine Description, ein 
 |---|---|
 | `psl_seo_brand` (Filter) | Marke im Title/OG/Agentur (Standard: Website-Titel) |
 | `psl_seo_data` (Filter, `SeoData $data, RouteDecision $decision`) | gesamte SEO-Daten ersetzen (muss `SeoData` zurückgeben) |
-| `psl_sync_finished` (Action, `SyncResult`) | nach erfolgreichem Sync (genutzt für Sitemap-Caches) |
+| `psl_sync_finished` (Action, `SyncResult`) | nach erfolgreichem Sync (genutzt für Sitemap- und Seiten-Caches) |
+| `psl_purge_page_cache` (Action, Liste geleerter Caches) | eigene Seiten-/Server-/CDN-Caches leeren, wenn sich der Bestand ändert |
 
 ## Sicherheit und Datenschutz
 

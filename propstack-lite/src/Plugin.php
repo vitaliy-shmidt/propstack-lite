@@ -24,6 +24,7 @@ use PropstackLite\Storage\PropertyStore;
 use PropstackLite\Storage\Schema;
 use PropstackLite\Support\Clock;
 use PropstackLite\Support\Logger;
+use PropstackLite\Support\PageCachePurger;
 use PropstackLite\Sync\Scheduler;
 use PropstackLite\Sync\SyncLock;
 use PropstackLite\Sync\SyncService;
@@ -54,12 +55,19 @@ final class Plugin {
 		$this->booted = true;
 
 		Schema::maybeUpgrade();
+		$migrated = Settings::maybeMigrateLegacy(); // Update ohne Aktivierungs-Hook (ZIP-Upload/FTP)
+		if ( $migrated ) {
+			$this->settings->flush();
+		}
 
 		$runIncremental = fn () => $this->syncService()->runIncremental();
 		$runFull        = fn () => $this->syncService()->runFull();
 
 		( new Scheduler( $this->settings ) )->register( $runIncremental, $runFull );
 		Scheduler::schedule(); // selbstheilend, falls Events fehlen (z. B. nach Migration)
+		if ( $migrated ) {
+			Scheduler::scheduleFullSoon(); // Bestand nach Update aus 0.2.x zeitnah füllen
+		}
 		( new WebhookController( $this->settings ) )->register( $runIncremental );
 
 		$store     = PropertyStore::create();
@@ -70,6 +78,7 @@ final class Plugin {
 		( new DetailController( $store, $this->settings, $urls, $templates, new Clock() ) )->register();
 		( new ListShortcode( $store, $this->settings, $templates, $urls ) )->register();
 		( new SeoIntegration( new SeoContext( $urls ), new SitemapSource( $store, $this->settings, $urls ) ) )->register();
+		( new PageCachePurger() )->register();
 
 		// Immobilienanfragen nur mit aktivem Contact Form 7 (alle aktiven Plugins sind zu plugins_loaded geladen).
 		if ( Cf7Integration::isAvailable() ) {

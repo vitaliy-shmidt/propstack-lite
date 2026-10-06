@@ -67,6 +67,6 @@ Zeilen werden nie gelöscht, damit ehemals öffentliche IDs später mit HTTP 410
 
 | Version | Datum | Änderung | Migrationsweg |
 |---|---|---|---|
-| 1 | 2026-10-05 | Tabelle angelegt | `Schema::install()` per `dbDelta`. Zusätzlich `Settings::migrateLegacy()`: übernimmt `status=` aus den 0.2.x-`query_params` als öffentliche Status, entfernt alte Settings-Schlüssel, Option `propstack_lite_cache_salt` und Transients `propstack_lite_cache*`. |
+| 1 | 2026-10-05 | Tabelle angelegt | `Schema::install()` per `dbDelta`. Zusätzlich `Settings::migrateLegacy()`: übernimmt `status=` aus den 0.2.x-`query_params` als öffentliche Status, entfernt alte Settings-Schlüssel, Option `propstack_lite_cache_salt` und Transients `propstack_lite_cache*`. Seit 0.4.1 läuft die Migration zusätzlich beim Plugin-Start (`Settings::maybeMigrateLegacy()`), weil ein Update per ZIP-Upload („Version ersetzen“) oder FTP den Aktivierungs-Hook nicht auslöst; danach wird ein Voll-Sync eingeplant. Getestet: 0.2.0 → 0.4.1 und 0.3.0 → 0.4.1 per Dateiersatz (Einstellungen, Key, Webhook-Token erhalten; eine Tabelle; kein Datenverlust). |
 
 Neue Schema-Version: `Schema::VERSION` erhöhen, `Schema::sql()` anpassen (dbDelta-Formatregeln beachten), bei Datenmigrationen Schritt in `maybeUpgrade()` ergänzen, diese Tabelle und `changelog.md` pflegen. Das JSON-Format in `data` ist separat versioniert (`Property::FORMAT_VERSION`); ein Voll-Sync schreibt alle aktiven Zeilen neu.

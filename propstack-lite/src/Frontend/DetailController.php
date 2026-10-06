@@ -102,6 +102,13 @@ final class DetailController {
 
 	public function handle404( mixed $preempt, \WP_Query $query ): mixed {
 		if ( ! $this->isRoute( $query ) ) {
+			// Route mit ungültiger ID (z. B. /immobilien/x-0/, ?psl_property=abc): echte 404 statt Startseite (kein Soft-404).
+			if ( $query->is_main_query() && '' !== (string) $query->get( Router::QV_ID ) ) {
+				$query->set_404();
+				status_header( 404 );
+				nocache_headers();
+				return true;
+			}
 			return $preempt;
 		}
 		if ( 404 === $this->decision()->httpStatus ) {

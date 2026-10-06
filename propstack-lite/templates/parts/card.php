@@ -5,19 +5,21 @@
  * Überschreibbar unter {theme}/propstack-lite/parts/card.php.
  * Alle Werte sind unescaped – jede Ausgabe hier escapen.
  *
- * @var array $vars card, heading
+ * @var array $vars card, heading, index (Position in der Liste, ab 0)
  */
 
 defined( 'ABSPATH' ) || exit;
 
 $card    = $vars['card'];
 $heading = $vars['heading'];
+// Erste Reihe (bis zu 3 Karten) sofort laden – meist LCP-Element der Übersicht; übrige lazy.
+$loading = ( $vars['index'] ?? 99 ) < 3 ? 'eager' : 'lazy';
 $badges  = array_filter( [ $card['type'], $card['marketing'] ] );
 ?>
 <article class="psl-card">
 	<?php if ( $card['image'] ) : ?>
 		<a class="psl-card__media" href="<?php echo esc_url( $card['url'] ); ?>" tabindex="-1" aria-hidden="true">
-			<img class="psl-card__img" src="<?php echo esc_url( $card['image'] ); ?>" alt="<?php echo esc_attr( $card['imageAlt'] ); ?>" loading="lazy" decoding="async" width="640" height="480">
+			<img class="psl-card__img" src="<?php echo esc_url( $card['image'] ); ?>" alt="<?php echo esc_attr( $card['imageAlt'] ); ?>" loading="<?php echo esc_attr( $loading ); ?>" decoding="async" width="640" height="480">
 		</a>
 	<?php else : ?>
 		<div class="psl-card__media psl-card__media--empty" aria-hidden="true"></div>
