@@ -159,6 +159,7 @@ final class SettingsPage {
 				</table>
 
 				<?php $this->renderLeadSettings( $o ); ?>
+				<?php $this->renderTrackingSettings(); ?>
 
 				<?php submit_button(); ?>
 			</form>
@@ -223,7 +224,6 @@ final class SettingsPage {
 			'consent'    => 'Zustimmung (acceptance-Feld)',
 		];
 		$map   = $this->settings->fieldMap();
-		$cfMap = $this->settings->customFieldMap();
 		?>
 		<h2>Immobilienanfragen (Contact Form 7 → Propstack)</h2>
 		<?php if ( ! $cf7Ready ) : ?>
@@ -272,6 +272,62 @@ final class SettingsPage {
 					</fieldset>
 				</td>
 			</tr>
+		</table>
+		<?php
+	}
+
+	/** Phase 6: Attribution, Consent, dataLayer, Propstack-Zuordnung (sichere Defaults: aus). */
+	private function renderTrackingSettings(): void {
+		$name      = Settings::OPTION;
+		$cfMap     = $this->settings->customFieldMap();
+		$providers = \PropstackLite\Tracking\Consent\ConsentProviders::all();
+		$current   = $this->settings->consentProviderId();
+		$labels    = [
+			'lead_id'            => 'Lead-ID (kein Marketingwert, auch ohne Consent)',
+			'first_utm_source'   => 'First Touch: Quelle',
+			'first_utm_medium'   => 'First Touch: Medium',
+			'first_utm_campaign' => 'First Touch: Kampagne',
+			'last_utm_source'    => 'Last Non-Direct: Quelle',
+			'last_utm_medium'    => 'Last Non-Direct: Medium',
+			'last_utm_campaign'  => 'Last Non-Direct: Kampagne',
+			'utm_content'        => 'utm_content',
+			'utm_term'           => 'utm_term',
+			'gclid'              => 'Google-Klick-ID (gclid)',
+			'gbraid'             => 'gbraid',
+			'wbraid'             => 'wbraid',
+			'landing_path'       => 'Erste Landingpage (Pfad)',
+			'referrer_host'      => 'Referrer-Domain (First Touch)',
+		];
+		?>
+		<h2>Tracking &amp; Attribution</h2>
+		<?php if ( ( $this->settings->trackingAttribution() || $this->settings->trackingDataLayer() ) && ! ( $providers[ $current ] ?? $providers['none'] )->allowsMarketing() ) : ?>
+			<div class="notice notice-warning inline"><p>Tracking ist aktiviert, aber kein Consent-System ausgewählt – es werden keine Attributionsdaten erfasst und keine Events gesendet.</p></div>
+		<?php endif; ?>
+		<p class="description">Das Plugin lädt kein GTM, GA4, Google Ads oder Pixel und sendet keine Daten an Dritte. Ohne Marketing-Consent werden keine Attributionsdaten gespeichert oder übertragen; die Anfrage funktioniert immer. Details: docs/tracking.md.</p>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row">Attribution</th>
+				<td><label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[tracking_attribution]" value="1" <?php checked( $this->settings->trackingAttribution() ); ?>> Kampagnenherkunft erfassen (First Touch + Last Non-Direct, First-Party-Cookie <code>psl_attr</code>)</label></td>
+			</tr>
+			<tr>
+				<th scope="row">dataLayer-Event</th>
+				<td><label><input type="checkbox" name="<?php echo esc_attr( $name ); ?>[tracking_datalayer]" value="1" <?php checked( $this->settings->trackingDataLayer() ); ?>> <code>property_lead</code> nach erfolgreicher Immobilienanfrage in den <code>dataLayer</code> schreiben</label></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="psl-consent-provider">Consent-Provider</label></th>
+				<td>
+					<select id="psl-consent-provider" name="<?php echo esc_attr( $name ); ?>[consent_provider]">
+						<?php foreach ( $providers as $id => $provider ) : ?>
+							<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $current, $id ); ?>><?php echo esc_html( $provider->label() . ( $provider->isVerified() ? '' : ' – nicht getestet' ) ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description">Ohne Consent-System bleibt Tracking wirkungslos (sicherer Standard). Bei „JavaScript-API“ muss das Consent-Tool der Website die Marketing-Einwilligung auf jeder Seite melden: <code>window.PSLTracking.setConsent(true|false)</code>.</p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="psl-attr-ttl">Speicherdauer (Tage)</label></th>
+				<td><input type="number" id="psl-attr-ttl" min="1" max="<?php echo esc_attr( (string) \PropstackLite\Tracking\AttributionStorage::MAX_TTL_DAYS ); ?>" name="<?php echo esc_attr( $name ); ?>[attribution_ttl_days]" value="<?php echo esc_attr( (string) $this->settings->attributionTtlDays() ); ?>"> <span class="description">Standard <?php echo esc_html( (string) \PropstackLite\Tracking\AttributionStorage::DEFAULT_TTL_DAYS ); ?> Tage; Touches älter als diese Dauer werden verworfen.</span></td>
+			</tr>
 			<tr>
 				<th scope="row">Propstack-Custom-Fields (optional)</th>
 				<td>
@@ -279,11 +335,11 @@ final class SettingsPage {
 						<legend class="screen-reader-text">Propstack-Custom-Fields</legend>
 						<?php foreach ( Settings::ATTRIBUTION_KEYS as $key ) : ?>
 							<label style="display:block;margin-bottom:4px">
-								<span style="display:inline-block;min-width:230px"><code><?php echo esc_html( $key ); ?></code> → client_cf_</span>
+								<span style="display:inline-block;min-width:330px"><?php echo esc_html( $labels[ $key ] ?? $key ); ?> → <code>client_cf_</code></span>
 								<input type="text" class="code" name="<?php echo esc_attr( $name ); ?>[cf_map][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cfMap[ $key ] ?? '' ); ?>" placeholder="leer = nicht senden">
 							</label>
 						<?php endforeach; ?>
-						<p class="description">Nur ausfüllen, wenn das Custom Field in Propstack existiert. Leer = wird nicht übertragen. In Phase 4 steht nur <code>lead_id</code> zur Verfügung; UTM/GCLID folgen mit dem Tracking.</p>
+						<p class="description">Nur ausfüllen, wenn das Custom Field in Propstack existiert (das Plugin legt keine Felder an). Leer = wird nicht übertragen. Attributionswerte nur mit aktivierter Attribution und Marketing-Consent des Besuchers.</p>
 					</fieldset>
 				</td>
 			</tr>

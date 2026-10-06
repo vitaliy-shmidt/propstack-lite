@@ -34,7 +34,8 @@ Besucher ─► /immobilien/{slug}-{id}/ ─► Routing\Router (Rewrite, Query-V
             ─► TemplateLoader ─► single-property.php | property-gone.php | Theme-404
             ─► Seo\SeoContext ─► Seo\SeoService ─► CoreAdapter | YoastAdapter | RankMathAdapter (Head)
 Suchmaschine ─► Sitemap (Core/Yoast/Rank Math) ─► Seo\Sitemap\SitemapSource ─► PropertyStore::sitemapRows()
-            (später: Tracking)
+Besucher ─► psl-tracking.js (Consent, Attribution-Cookie) ─► psl-lead-event.js (Formularfeld psl_attr, dataLayer)
+            CF7 ─► Cf7Integration ─► Filter psl_lead_attribution ─► Tracking\TrackingIntegration (Propstack client_cf_*)
 ```
 
 ## Komponenten und Klassen
@@ -75,6 +76,8 @@ Suchmaschine ─► Sitemap (Core/Yoast/Rank Math) ─► Seo\Sitemap\SitemapSou
 | `Rest\WebhookController` | `POST /wp-json/propstack/v1/webhook` → plant Sync (kein Sync im Request) |
 | `Cli\Command` | `wp psl sync|status|statuses|audit` |
 | `Support\Slugger`, `Logger`, `Clock` | Slugs, Logging ohne PII, testbare Zeit |
+| `Tracking\TrackingIntegration`, `Attribution`, `Touch`, `AttributionStorage`, `LeadEvent`, `Consent\*` | Phase 6: Skripte, Hidden Field, Attribution für Propstack, Event-Daten; Consent-Provider-Registry ([tracking.md](tracking.md)) |
+| `assets/js/psl-tracking.js`, `psl-lead-event.js` | Consent/Attribution seitenweit; Formular-Übergabe und `property_lead` nur auf Detailseiten mit Formular |
 | `Support\PageCachePurger` | leert Full-Page-Caches (WP Super Cache, W3TC, WP Rocket, LiteSpeed, WP Fastest Cache, SiteGround; Action `psl_purge_page_cache`) nach Sync mit Bestandsänderungen und nach Einstellungsänderungen |
 
 ## Designentscheidungen
@@ -112,9 +115,9 @@ Contact Form 7 (nur wenn aktiv) rendert, validiert und versendet; Propstack Lite
 
 Eine Quelle für alle Werte: `Seo\SeoService` berechnet aus `Property`, `RouteDecision`, kanonischer URL und Site-Daten ein `SeoData`-Objekt. `Seo\SeoIntegration` registriert genau einen Ausgabe-Adapter (Yoast > Rank Math > Core); die Adapter enthalten keine Fachlogik. Sitemaps lesen über `SitemapSource` dieselben Store-Kriterien wie die Detailseite (aktiv + öffentlicher Status) und dieselbe URL wie der Canonical. Statuscodes, 301 und `X-Robots-Tag` bleiben im `DetailController`. Details: [seo.md](seo.md).
 
-## Tracking-Architektur – **Geplant (Phase 6)**
+## Tracking-Architektur – implementiert (Phase 6)
 
-Attribution clientseitig (First Touch + Last Non-Direct Touch) hinter `ConsentProviderInterface`; Übergabe an CF7-Hidden-Fields; `dataLayer.push({event: 'property_lead', …})` nur nach `wpcf7mailsent`. Details: [tracking.md](tracking.md).
+Attribution ausschließlich clientseitig im First-Party-Cookie (`psl-tracking.js`, seitenweit, nur mit Consent); das Formular-Skript überträgt sie nur bei aktuellem Consent im Hidden Field `psl_attr`, der Server (`Tracking\AttributionStorage`) validiert mit denselben Regeln. Consent über `Tracking\Consent\ConsentProviderInterface` (Standard `none`). Conversion-Event: Server hängt nach `mail_sent` öffentliche Event-Daten an die CF7-Antwort (`Tracking\LeadEvent`), `psl-lead-event.js` pusht `property_lead` einmal pro Lead-ID. Keine eigene Tabelle, keine externen Requests, kein GTM. Details: [tracking.md](tracking.md).
 
 ## Theme-Integration
 

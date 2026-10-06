@@ -104,6 +104,8 @@ Nur öffentliche Propstack-Felder (`name` inkl. akademischem Titel, `position`, 
 
 **Kontaktbereich (Phase 4):** Sprungziel `#psl-contact` mit `tabindex="-1"` (Fokus nach Klick auf „Anfrage senden“) und `scroll-margin-top: var(--psl-scroll-offset, 24px)` – Themes mit fixem Header setzen z. B. `:root { --psl-scroll-offset: 120px; }` (theme-neutral, ohne JavaScript; für Avada **noch nicht gegen reale Installation verifiziert**). Das CF7-Formular wird nicht vom Plugin gestaltet (nur Abstand `.psl-contact__form`); Honeypot `.psl-hp` ist visuell und für Screenreader verborgen.
 
+**Tracking (Phase 6):** keine Tracking-Logik in Templates. Mit aktivem Tracking und Consent-Provider lädt WordPress `psl-tracking.js` seitenweit und `psl-lead-event.js` nur auf Detailseiten mit Formular (beide `defer`, Footer, Konfiguration als Inline-JSON). Das Formular erhält zusätzlich das leere Hidden Field `psl_attr` ([tracking.md](tracking.md)).
+
 ## Theme-Overrides – Beispiel
 
 ```

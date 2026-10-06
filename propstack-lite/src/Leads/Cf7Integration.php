@@ -24,6 +24,7 @@ use PropstackLite\Support\Logger;
  *  - wpcf7_before_send_mail ($abort)              Property-Verifikation, Rate-Limit, Mail-Vorbereitung
  *  - wpcf7_special_mail_tags                      [_psl_propstack_block]
  *  - wpcf7_mail_sent / wpcf7_mail_failed          Status-Logging, Action psl_lead_sent
+ *  - Filter psl_lead_attribution                  Attributionswerte (Phase 6, Tracking-Schicht)
  *  - WPCF7_Submission::get_posted_data(), get_meta(), get_contact_form(), set_response()
  */
 final class Cf7Integration {
@@ -169,6 +170,8 @@ final class Cf7Integration {
 				fn ( $stored ) => $this->urls->canonicalUrl( $stored )
 			);
 			$lead = $factory->build( $posted, $propertyId, $leadId );
+			// Phase 6: Attribution (nur mit Einstellung + Consent; Tracking\TrackingIntegration). Nie Voraussetzung für die Anfrage.
+			$lead = $lead->withAttribution( (array) apply_filters( 'psl_lead_attribution', $lead->attribution, $lead ) );
 
 			$sink = new Cf7MailLeadSink( $form, $this->settings, $this->formatter, self::locale() );
 			$sink->deliver( $lead );

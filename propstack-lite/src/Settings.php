@@ -28,6 +28,11 @@ final class Settings {
 		'inquiry_bcc'         => '',
 		'field_map'           => self::DEFAULT_FIELD_MAP,
 		'cf_map'              => [],
+		// Phase 6: Attribution und Conversion-Tracking (sichere Defaults: aus, kein Consent)
+		'tracking_attribution' => false,
+		'tracking_datalayer'   => false,
+		'consent_provider'     => 'none',
+		'attribution_ttl_days' => 90,
 	];
 
 	/** Formularfelder (intern) → erwartete CF7-Feldnamen (im Admin änderbar). */
@@ -45,7 +50,15 @@ final class Settings {
 	public const REQUIRED_FIELDS = [ 'first_name', 'last_name', 'email', 'phone', 'message', 'consent' ];
 
 	/** Werte, die später als Propstack-Custom-Fields (client_cf_*) übertragen werden können. */
-	public const ATTRIBUTION_KEYS = [ 'lead_id', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'gclid', 'gbraid', 'wbraid' ];
+	public const ATTRIBUTION_KEYS = [
+		'lead_id',
+		'first_utm_source', 'first_utm_medium', 'first_utm_campaign',
+		'last_utm_source', 'last_utm_medium', 'last_utm_campaign',
+		'utm_content', 'utm_term', 'gclid', 'gbraid', 'wbraid', 'landing_path', 'referrer_host',
+	];
+
+	/** Schlüssel aus 0.3/0.4 (vor Phase 6) → aktuelle Schlüssel (bestehende Zuordnungen bleiben erhalten). */
+	private const ATTRIBUTION_KEY_ALIASES = [ 'utm_source' => 'last_utm_source', 'utm_medium' => 'last_utm_medium', 'utm_campaign' => 'last_utm_campaign' ];
 
 	/** Einstellungen aus Version 0.2.x, die bei der Migration entfernt werden. */
 	private const LEGACY_KEYS = [ 'endpoint', 'query_params', 'cache_minutes', 'detail_url_template', 'dev_no_cache' ];
@@ -125,6 +138,25 @@ final class Settings {
 		return self::cleanCustomFieldMap( $this->all()['cf_map'] );
 	}
 
+	/* --------------------------------------------------------------- Tracking */
+
+	public function trackingAttribution(): bool {
+		return (bool) $this->all()['tracking_attribution'];
+	}
+
+	public function trackingDataLayer(): bool {
+		return (bool) $this->all()['tracking_datalayer'];
+	}
+
+	public function consentProviderId(): string {
+		$id = (string) $this->all()['consent_provider'];
+		return preg_match( '/^[a-z0-9_]{1,40}$/', $id ) ? $id : 'none';
+	}
+
+	public function attributionTtlDays(): int {
+		return self::clampTtl( $this->all()['attribution_ttl_days'] );
+	}
+
 	/**
 	 * sanitize_callback der Settings API.
 	 * Ein leeres API-Key-Feld behält den gespeicherten Key (Passwortfeld wird nie vorbefüllt).
@@ -157,10 +189,24 @@ final class Settings {
 			'inquiry_bcc'         => self::cleanEmail( $input['inquiry_bcc'] ?? '', 'inquiry_bcc', 'interne Kopie (BCC)' ),
 			'field_map'           => self::cleanFieldMap( $input['field_map'] ?? [] ),
 			'cf_map'              => self::cleanCustomFieldMap( $input['cf_map'] ?? [] ),
+			'tracking_attribution' => ! empty( $input['tracking_attribution'] ),
+			'tracking_datalayer'   => ! empty( $input['tracking_datalayer'] ),
+			'consent_provider'     => self::cleanConsentProvider( $input['consent_provider'] ?? 'none' ),
+			'attribution_ttl_days' => self::clampTtl( $input['attribution_ttl_days'] ?? \PropstackLite\Tracking\AttributionStorage::DEFAULT_TTL_DAYS ),
 		];
 
 		$this->cache = null;
 		return $clean;
+	}
+
+	public static function clampTtl( mixed $value ): int {
+		$days = is_numeric( $value ) ? (int) $value : \PropstackLite\Tracking\AttributionStorage::DEFAULT_TTL_DAYS;
+		return max( 1, min( \PropstackLite\Tracking\AttributionStorage::MAX_TTL_DAYS, $days ) );
+	}
+
+	private static function cleanConsentProvider( mixed $value ): string {
+		$id = is_string( $value ) ? $value : 'none';
+		return array_key_exists( $id, \PropstackLite\Tracking\Consent\ConsentProviders::all() ) ? $id : 'none';
 	}
 
 	/** Formular-ID als Integer; existiert das CF7-Formular nicht, wird 0 gespeichert und ein Hinweis angezeigt. */
@@ -196,7 +242,12 @@ final class Settings {
 	/** @return array<string, string> nur bekannte Schlüssel, nur gültige Propstack-Feldnamen */
 	public static function cleanCustomFieldMap( mixed $value ): array {
 		$value = is_array( $value ) ? $value : [];
-		$map   = [];
+		foreach ( self::ATTRIBUTION_KEY_ALIASES as $old => $new ) {
+			if ( isset( $value[ $old ] ) && ! isset( $value[ $new ] ) ) {
+				$value[ $new ] = $value[ $old ];
+			}
+		}
+		$map = [];
 		foreach ( self::ATTRIBUTION_KEYS as $key ) {
 			$name = isset( $value[ $key ] ) ? strtolower( trim( (string) $value[ $key ] ) ) : '';
 			if ( '' !== $name && preg_match( '/^[a-z0-9_]{1,64}$/', $name ) ) {
@@ -219,6 +270,10 @@ final class Settings {
 		}
 		$merged['field_map'] = self::cleanFieldMap( $merged['field_map'] );
 		$merged['cf_map']    = self::cleanCustomFieldMap( $merged['cf_map'] );
+		$merged['tracking_attribution'] = (bool) $merged['tracking_attribution'];
+		$merged['tracking_datalayer']   = (bool) $merged['tracking_datalayer'];
+		$merged['consent_provider']     = self::cleanConsentProvider( $merged['consent_provider'] );
+		$merged['attribution_ttl_days'] = self::clampTtl( $merged['attribution_ttl_days'] );
 		update_option( self::OPTION, $merged, false );
 		$this->cache = null;
 	}

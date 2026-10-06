@@ -39,6 +39,8 @@ Bewusst **nicht** umgesetzt, weil ohne reale Installation nicht prüfbar: Avada-
 4. Wird der Wrapper-Hook für Avada-spezifisches Markup gebraucht?
 5. Fallback, falls Avada ohne Post nicht sauber rendert: nicht indexierte Hostseite als Layout-Träger, Daten weiterhin aus dem Router (müsste begründet, gekapselt und getestet werden).
 
+**Stand 2026-10-06:** Laut Rückmeldung rendert die DomainFactory-Staging-Instanz (PHP 8.2, Avada) Übersicht, Detailseite mit Galerie, Fakten, Texten, Energie, Grundriss, Ansprechpartner und Formular. Die obigen Punkte sowie fixierter Header (`--psl-scroll-offset`), Sprung zu `#psl-contact`, Lightbox, Buttons, Überschriften und globale CSS-Konflikte sind **noch nicht durch einen eigenen Smoke-Test verifiziert** (kein Zugang). Tracking (Phase 6) hat keine Avada-Abhängigkeit.
+
 ## Fallback ohne Avada
 
 Neutrale Wrapper, eigene minimale Styles; alle Funktionen bleiben erhalten (getestet).

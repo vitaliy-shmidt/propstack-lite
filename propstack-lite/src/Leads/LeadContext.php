@@ -8,7 +8,8 @@ use PropstackLite\Domain\Property;
  * Unveränderlicher Kontext einer Immobilienanfrage.
  *
  * Objektdaten (ID, Titel, URL …) stammen ausschließlich aus dem lokalen PropertyStore,
- * nie aus Browserdaten. `attribution` ist in Phase 4 leer bis auf `lead_id` (Phase 6 ergänzt UTM/GCLID).
+ * nie aus Browserdaten. `attribution` enthält `lead_id` und – nur mit aktivierter Attribution und
+ * Marketing-Consent – Werte aus dem Attribution-Cookie (Phase 6, siehe Tracking\Attribution).
  */
 final class LeadContext {
 
@@ -22,4 +23,21 @@ final class LeadContext {
 		public readonly LeadData $data,
 		public readonly array $attribution = []
 	) {}
+
+	/**
+	 * Kopie mit ergänzten Attributionswerten: nur bekannte Schlüssel, nur nicht-leere Strings;
+	 * `lead_id` bleibt immer die serverseitig bestätigte Lead-ID.
+	 *
+	 * @param array<string, mixed> $values
+	 */
+	public function withAttribution( array $values ): self {
+		$clean = [];
+		foreach ( \PropstackLite\Settings::ATTRIBUTION_KEYS as $key ) {
+			if ( isset( $values[ $key ] ) && is_string( $values[ $key ] ) && '' !== $values[ $key ] ) {
+				$clean[ $key ] = $values[ $key ];
+			}
+		}
+		$clean['lead_id'] = $this->leadId;
+		return new self( $this->leadId, $this->property, $this->propertyUrl, $this->data, $clean );
+	}
 }

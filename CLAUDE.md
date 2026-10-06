@@ -3,7 +3,7 @@
 **Propstack Listings Lite** ist ein WordPress-Plugin für Picaflor Immobilien: Es synchronisiert öffentliche Immobilien aus Propstack (führendes System) in eine lokale Tabelle und stellt sie auf der Website dar. Später kommen dynamische, SEO-fähige Detailseiten, Anfragen über Contact Form 7 und Kampagnen-Tracking dazu.
 
 - Plugin: `propstack-lite/` (Einstieg `propstack-lite.php`, Code in `src/`, Namespace `PropstackLite\`)
-- Dokumentation: `docs/` – **zuerst `docs/README.md` lesen** (Status, offene Punkte, Verweise); Detailseite/Templates/Galerie: `docs/frontend.md`; SEO/Sitemaps: `docs/seo.md`
+- Dokumentation: `docs/` – **zuerst `docs/README.md` lesen** (Status, offene Punkte, Verweise); Detailseite/Templates/Galerie: `docs/frontend.md`; SEO/Sitemaps: `docs/seo.md`; Tracking: `docs/tracking.md`
 - Theme der Live-Seite: Avada (lokal nicht vorhanden, Integration nur über Adapter)
 
 ## Aktueller Stand
@@ -18,6 +18,7 @@ Siehe Statustabelle in `docs/README.md`. Phasen-Workflow: **Plan → Implementie
 - Kein CPT pro Immobilie, kein Rewrite des Plugins, schrittweise Migration.
 - Theme-, CF7- und SEO-Plugin-Integration nur über Adapter und offizielle Hooks.
 - SEO-Werte nur im `Seo\SeoService`; genau ein Ausgabe-Adapter je Request (Yoast > Rank Math > Core). Keine Head-Tags im `DetailController` oder in Templates.
+- Tracking nur in `Tracking\*` und `assets/js/psl-tracking.js`/`psl-lead-event.js`; Standard aus, ohne Marketing-Consent keine Daten; nie PII oder Klick-IDs in dataLayer/Logs; Plugin lädt kein GTM/GA4/Pixel ([docs/tracking.md](docs/tracking.md)).
 
 ## Sicherheitsregeln (Details: `docs/security.md`)
 
@@ -42,6 +43,7 @@ Siehe Statustabelle in `docs/README.md`. Phasen-Workflow: **Plan → Implementie
 cd propstack-lite
 composer install                          # nur Dev-Abhängigkeiten (PHPUnit, WP-Stubs)
 vendor/bin/phpunit --testsuite unit        # ohne WordPress
+node --test tests/js/tracking.test.cjs      # Attributionslogik (ohne Abhängigkeiten)
 PSL_WP_LOAD=/pfad/zu/wp-load.php vendor/bin/phpunit --testsuite integration   # NUR Wegwerf-Instanz!
 PSL_WP_LOAD=… PSL_TEST_BASE_URL=http://127.0.0.1:8099/Picaflor vendor/bin/phpunit --testsuite http   # laufender Testserver nötig; SEO-Modi: docs/testing.md
 wp psl status | wp psl sync [--full|--id=N] | wp psl statuses | wp psl audit

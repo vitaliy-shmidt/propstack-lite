@@ -127,7 +127,7 @@ Die Zuordnung beruht nie allein auf dem Hidden Field `psl_property_id`: Wert →
 ## Lead-ID
 
 - Jede Formularausgabe erhält `psl_lead_id` (UUID v4, `wp_generate_uuid4()`), keine personenbezogenen Daten.
-- Server: nur gültiges UUID-v4-Format und noch nicht verwendet (Transient `psl_lead_used_{id}`, 1 Tag) wird übernommen, sonst neu erzeugt. Damit bleiben Lead-IDs eindeutig, auch bei mehrfachem Absenden derselben Seite oder bei **Full-Page-Caching** (dort hätten alle Besucher dieselbe vorgerenderte ID). Für Phase 6 ist eine clientseitige Erzeugung vorgesehen.
+- Server: nur gültiges UUID-v4-Format und noch nicht verwendet (Transient `psl_lead_used_{id}`, 1 Tag) wird übernommen, sonst neu erzeugt. Damit bleiben Lead-IDs eindeutig, auch bei mehrfachem Absenden derselben Seite oder bei **Full-Page-Caching** (dort hätten alle Besucher dieselbe vorgerenderte ID). Phase 6 nutzt dieselbe serverseitig bestätigte ID für das dataLayer-Event (aus der CF7-Antwort) – keine zusätzliche Tracking-ID.
 - Verwendung: Log-Korrelation, optional Propstack-Custom-Field (`client_cf_…` nur mit Zuordnung), später Analytics-Deduplizierung.
 
 ## Spam- und Missbrauchsschutz
@@ -164,7 +164,8 @@ Log (nur mit `WP_DEBUG_LOG`): `[propstack-lite] INFO lead {"lead":"<uuid>","prop
 - `LeadSink`-Interface: später `PropstackApiLeadSink` (POST /v1/contacts, /v1/activities) oder Hybrid – **nicht implementiert**, kein schreibender API-Zugriff.
 - Action `psl_lead_sent` (`LeadContext`) nach erfolgreichem Versand (serverseitig).
 - Filter `psl_inquiry_form_available`.
-- **Phase 6 (Tracking):** Für Conversion-Events kann das CF7-DOM-Event `wpcf7mailsent` genutzt werden – es feuert nur bei AJAX-Submissions und nur bei Status `mail_sent`. Die Zustellung der Anfrage hängt **nie** von diesem Browser-Event ab; maßgeblich ist die serverseitige Verarbeitung. Lead-ID (`psl_lead_id`) und Property-ID stehen im Formular zur Verfügung. Noch kein dataLayer, kein GA4/Ads, keine UTM-Cookies.
+- Filter `psl_lead_attribution` (Phase 6): ergänzt Attributionswerte für die Propstack-Zuordnung; nur bekannte Schlüssel, `lead_id` bleibt serverseitig.
+- **Phase 6 (Tracking):** `property_lead` im dataLayer nur nach `wpcf7mailsent` mit serverseitig bestätigten Daten (`psl_lead` in der CF7-Antwort, nur bei `mail_sent`). Die Zustellung der Anfrage hängt **nie** vom Tracking ab. Attribution (`first_utm_*`, `last_utm_*`, `utm_content`, `utm_term`, `gclid`, `gbraid`, `wbraid`, `landing_path`, `referrer_host`) als `client_cf_*` nur mit Zuordnung und Marketing-Consent ([tracking.md](tracking.md)).
 
 ## Mail-Zustellbarkeit (Produktion)
 
@@ -195,6 +196,7 @@ Vorgaben der Freigabe (2026-10-06): genau **ein** synthetischer Testkontakt („
 |---|---|---|---|---|---|
 | 2026-10-06 | **Nicht durchgeführt** – keine Anfrage gesendet | nicht verifizierbar | nicht verifizierbar | nicht verifizierbar | Voraussetzungen nicht prüfbar, siehe unten |
 | 2026-10-06 (RC-Abnahme) | **BLOCKED** – keine Anfrage gesendet | nicht verifizierbar | nicht verifizierbar | nicht verifizierbar | erneut geprüft: Kontakte/Quellen/Aktivitätstypen/Hooks/Makler weiter 401, Propstack-Adresse unbekannt (Platzhalter), kein Staging-Mailtransport |
+| 2026-10-06 (Phase 6) | **BLOCKED** – keine Anfrage gesendet | nicht verifizierbar | nicht verifizierbar | nicht verifizierbar | keine neuen Angaben zu Postfach, Automatisierung, Quelle, SMTP; Attribution/Mail nur per Mail-Capture getestet |
 
 Gründe (Prüfung vor dem Senden, nur lesend):
 

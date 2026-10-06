@@ -29,6 +29,7 @@ use PropstackLite\Sync\Scheduler;
 use PropstackLite\Sync\SyncLock;
 use PropstackLite\Sync\SyncService;
 use PropstackLite\Sync\SyncState;
+use PropstackLite\Tracking\TrackingIntegration;
 use PropstackLite\Theme\AvadaAdapter;
 
 /** Verdrahtung und Hook-Registrierung. Dienste werden erst bei Bedarf erzeugt. */
@@ -79,6 +80,7 @@ final class Plugin {
 		( new ListShortcode( $store, $this->settings, $templates, $urls ) )->register();
 		( new SeoIntegration( new SeoContext( $urls ), new SitemapSource( $store, $this->settings, $urls ) ) )->register();
 		( new PageCachePurger() )->register();
+		( new TrackingIntegration( $this->settings ) )->register(); // Phase 6: Attribution/Conversion (Standard: aus)
 
 		// Immobilienanfragen nur mit aktivem Contact Form 7 (alle aktiven Plugins sind zu plugins_loaded geladen).
 		if ( Cf7Integration::isAvailable() ) {

@@ -1,5 +1,27 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-06 – Phase 6: Attribution und Conversion-Tracking (Version 0.5.0)
+
+**Staging-Smoke-Test:** nicht durch Claude durchgeführt – für die DomainFactory-Instanz lagen weder URL noch Zugang vor. Laut Rückmeldung laufen dort Sync, Übersicht, Detailseite (Avada) und Formular. Checkliste in [avada.md](avada.md); keine Avada-spezifischen Fixes.
+
+**Wichtigste Änderungen**
+- Neue Schicht `src/Tracking/`: `TrackingIntegration`, `Touch`, `Attribution`, `AttributionStorage`, `LeadEvent`, `Consent\ConsentProviderInterface`, `Consent\NoConsentProvider` (Standard), `Consent\JsApiConsentProvider`, `Consent\ConsentProviders` (Filter `psl_consent_providers`).
+- `assets/js/psl-tracking.js` (seitenweit, nur bei aktivem Tracking und Consent-Provider): First Touch + Last Non-Direct im First-Party-Cookie `psl_attr` (90 Tage, nur mit Marketing-Consent), API `PSLTracking.setConsent/hasConsent/attribution`.
+- `assets/js/psl-lead-event.js` (nur Detailseiten mit Formular): Attribution ins Hidden Field `psl_attr` nur bei aktuellem Consent; `property_lead` in den `dataLayer` nur nach `wpcf7mailsent` mit serverseitig bestätigten Daten, einmal pro Lead-ID.
+- Server: Filter `psl_lead_attribution` (Cf7Integration) → validierte Attribution für `client_cf_*`; `wpcf7_feedback_response` → `psl_lead` (Lead-ID, Objekt-ID, Vermarktungsart, Objektart, Ort) nur bei `mail_sent` des konfigurierten Formulars.
+- Einstellungen „Tracking & Attribution“: Attribution, dataLayer-Event, Consent-Provider, Speicherdauer, Propstack-Custom-Fields (neue Schlüssel `first_utm_*`, `last_utm_*`, `utm_content`, `utm_term`, `gclid`, `gbraid`, `wbraid`, `landing_path`, `referrer_host`). Alle Standardwerte: aus/`none`.
+- `LeadContext::withAttribution()`.
+
+**Bugs behoben:** keine (während Phase 6 keine Fehler im Bestand gefunden).
+
+**Neue Dateien:** `src/Tracking/*.php` (5), `src/Tracking/Consent/*.php` (4), `assets/js/psl-tracking.js`, `assets/js/psl-lead-event.js`, `tests/js/tracking.test.cjs`, `tests/Unit/TrackingTest.php`, `tests/Http/TrackingHttpTest.php`.
+
+**DB-Migrationen:** keine (neue Einstellungsschlüssel mit sicheren Defaults).
+
+**Breaking Changes:** keine. Propstack-Zuordnungen `utm_source/utm_medium/utm_campaign` (0.3–0.4) gelten als `last_utm_*`. Die Feldzuordnung ist im Admin vom Bereich „Immobilienanfragen“ nach „Tracking & Attribution“ umgezogen.
+
+**Offene Punkte:** Consent-Tool der Website festlegen und per JS-API anbinden (nicht getestet), GTM-Konfiguration, Staging-Smoke-Test inkl. Avada, Propstack-E2E (BLOCKED).
+
 ## 2026-10-06 – Release-Candidate-Abnahme, Fixes (Version 0.4.1)
 
 Abnahmebericht: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md). Keine Phase-6-Funktionalität.

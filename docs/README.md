@@ -9,7 +9,7 @@
 | Phase 4 – Leads | abgeschlossen (2026-10-05) |
 | Phase 5 – SEO | abgeschlossen (2026-10-06) |
 | Release-Candidate-Abnahme | abgeschlossen (2026-10-06), **PASS WITH OPEN ITEMS** – [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md) |
-| Phase 6 – Tracking | geplant |
+| Phase 6 – Tracking | abgeschlossen (2026-10-06), Standard aus; Staging-Smoke-Test und reales Consent-Tool offen |
 | Phase 7 – Filter/UX | geplant |
 | Phase 8 – Hardening | geplant |
 
@@ -34,7 +34,7 @@ Besucher ──► [propstack_list] ──────────────�
 
 Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [architecture.md](architecture.md).
 
-## Aktueller Entwicklungsstand (nach Phase 5)
+## Aktueller Entwicklungsstand (nach Phase 6)
 
 **Implementiert:**
 - API-Client (nur lesend), Whitelist-Mapper, einheitliches `Property`-Modell, Tabelle `{prefix}psl_properties`
@@ -46,7 +46,9 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 - **Immobilienanfragen:** Contact-Form-7-Formular auf anfragbaren Detailseiten, serverseitige Property-Verifikation, Propstack-Mailblock `ps-kontaktanfrage` an die konfigurierte Propstack-Adresse, Rate-Limit, Honeypot, Lead-ID, Admin-Status ([leads.md](leads.md)). Echter Propstack-E2E-Test am 2026-10-06 **nicht durchgeführt** – Voraussetzungen (Propstack-Postfach, CRM-Prüfzugriff, Mailtransport) nicht verifizierbar (Protokoll in leads.md).
 - **SEO:** zentraler `SeoService` (Title, Description, Canonical, Robots, Open Graph/Twitter, JSON-LD `RealEstateListing`/`Offer`/`BreadcrumbList`), Ausgabe ohne SEO-Plugin selbst oder über Yoast SEO bzw. Rank Math (Priorität Yoast > Rank Math > Core, Admin-Hinweis bei mehreren), XML-Sitemap für Core/Yoast/Rank Math ([seo.md](seo.md)).
 
-**Noch nicht implementiert:** Tracking (Phase 6), ähnliche Immobilien, Filter-UI/Pagination (Phase 7).
+- **Attribution & Conversion (Phase 6):** First Touch + Last Non-Direct im First-Party-Cookie `psl_attr` (90 Tage, nur mit Marketing-Consent), `ConsentProviderInterface` (Standard: kein Consent), `property_lead` im dataLayer nur nach erfolgreichem CF7-Versand, dedupliziert über die Lead-ID, optionale Propstack-`client_cf_*`-Zuordnung; lädt kein GTM/GA4/Pixel ([tracking.md](tracking.md)).
+
+**Noch nicht implementiert:** ähnliche Immobilien, Filter-UI/Pagination (Phase 7).
 
 ## Dokumente
 
@@ -61,7 +63,7 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 | [seo.md](seo.md) | SEO: Title/Description/Robots/OG/JSON-LD, Core-/Yoast-/Rank-Math-Modus, Sitemaps |
 | [frontend.md](frontend.md) | Detailseite: Template-Teile, ViewModel, Formatter, Galerie/Lightbox, Bildfilter, Energie, Ansprechpartner, Hooks, Overrides |
 | [leads.md](leads.md) | Immobilienanfragen: CF7 → Propstack-Mail, Feldzuordnung, Mailformat, Sicherheit, E2E-Anleitung |
-| [tracking.md](tracking.md) | UTM/GCLID, Consent, dataLayer (geplant) |
+| [tracking.md](tracking.md) | Attribution (First/Last Non-Direct), Cookie, Consent-Provider, `property_lead`, Propstack-Zuordnung, Staging-Konfiguration |
 | [avada.md](avada.md) | Theme-Integration (Adapter nicht gegen reales Avada verifiziert) |
 | [security.md](security.md) | verbindliche Sicherheitsregeln |
 | [testing.md](testing.md) | Teststrategie, Testumgebung, Ergebnisse, Checklisten |
@@ -73,6 +75,8 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 
 Vollständige Liste vor Staging/Produktion: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md).
 
+- **Staging (DomainFactory, PHP 8.2, Avada):** laut Rückmeldung laufen Sync, Übersicht, Detailseite und Formular; ein eigener Smoke-Test durch Claude war mangels Zugang nicht möglich – Avada-Checkliste in [avada.md](avada.md).
+- **Tracking:** Consent-Tool der Live-Site noch nicht festgelegt/angebunden; bis dahin bleibt Tracking wirkungslos (Provider `none`).
 - **Avada nicht verifiziert:** Getestet gegen Wegwerf-Instanzen (WordPress 7.1.2 in `/Picaflor/` und frisch in `/rc-site/`, Twenty Twenty-One/-Five, CF7 6.1.7, Yoast 28.6, Rank Math 1.0.279, WP Super Cache 3.1.4, PHP 8.3 und 8.2). Avada und die tatsächliche SEO-/Cache-Konfiguration der Live-Site gelten erst mit Staging als verifiziert.
 - Übersicht ohne Blätterfunktion (Phase 7): Objekte jenseits von `per` erscheinen nur über die Sitemap; `per` auf der Live-Seite ausreichend hoch setzen.
 - SEO-Integration mit Yoast SEO 28.6 und Rank Math 1.0.279 nur in der Testinstanz geprüft; andere SEO-Plugins (AIOSEO, SEOPress …) werden nicht erkannt ([seo.md](seo.md)).

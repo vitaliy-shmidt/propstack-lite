@@ -65,9 +65,14 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 - Kein Lead-Archiv im Plugin – **getestet** (keine Anfrageinhalte in Optionen/Posts/Postmeta).
 - Propstack-Empfangsadresse nie im Frontend/JavaScript.
 
-## Tracking (Geplant, Phase 6)
+## Tracking (Phase 6, umgesetzt)
 
-Keine PII im dataLayer/Analytics/Logs; Cookies nur nach Consent; Plugin lädt kein GTM.
+- Keine PII in Attribution, Cookie, dataLayer oder Logs; kein IP/User-Agent/Fingerprinting – **getestet** (JS-, Unit-, HTTP-, Browser-Tests).
+- Cookie `psl_attr` nur mit Marketing-Consent, nur clientseitig, `SameSite=Lax`, `Secure` bei HTTPS; Standard-Provider `none` → nie Cookie/Event – **getestet**.
+- Alle Attributionswerte werden im Browser **und** serverseitig mit denselben Regeln bereinigt (Steuer-/HTML-Zeichen, Längen, Klick-ID-Zeichensatz, nur Pfad/Domain); XSS-Payloads in UTM/Hidden Field entschärft, Mail-Werte zusätzlich escaped – **getestet**.
+- `gclid`/`gbraid`/`wbraid` nur im Cookie (mit Consent) und optional als zugeordnetes Propstack-Feld; nie im dataLayer, HTML oder Log – **getestet**.
+- Event-Daten nur aus der serverseitigen CF7-Antwort nach `mail_sent`; gefälschte DOM-Events ohne `psl_lead` werden ignoriert – **getestet**.
+- Plugin lädt kein GTM/GA4/Ads/Pixel und erzeugt keine externen Requests – **getestet**.
 
 ## Logging
 

@@ -4,6 +4,7 @@
 
 | Ebene | Werkzeug | Läuft ohne WordPress | Inhalt |
 |---|---|---|---|
+| JavaScript | `node --test tests/js/tracking.test.cjs` (Node ≥ 18, ohne Abhängigkeiten) | ja | Attributionslogik: Touches, First/Last, TTL, Klassifikation, Bereinigung/XSS, Consent/Cookie |
 | Unit | PHPUnit 10 (`tests/Unit`) | ja | Mapper/Datenschutzregeln, Sanitizer, Slugger, Formatter, StateResolver, Client (Retry, Fehler, Secrets), Pagination, SEO-Werte (Title, Description, Robots, OG, JSON-LD) |
 | Integration | PHPUnit 10 (`tests/Integration`) + WordPress-Wegwerfinstanz | nein | Store (Sichtbarkeit, Filter, SQL-Whitelist), alle Sync-Übergänge mit simuliertem Propstack (`FakePropstack`), Shortcode-Ausgabe, keine HTTP-Requests im Frontend |
 | HTTP (End-to-End) | PHPUnit 10 (`tests/Http`) + laufender Webserver der Testinstanz | nein | echte Requests: Routing-Matrix 200/301/404/410, Legacy, Unterverzeichnis, Head-Tags je SEO-Modus ohne Dubletten, Schema-Validierung, Sitemaps, Datenschutz und XSS im HTML, 0 Propstack-Requests |
@@ -66,6 +67,16 @@ In der Testinstanz installiert (standardmäßig inaktiv): Yoast SEO 28.6, Rank M
 - StateResolver: 19 Zustandskombinationen
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
+
+## Ergebnisse Phase 6 (2026-10-06, 0.5.0)
+
+- JavaScript: 17 Tests – grün (Direct, erster UTM-Besuch, zweiter Direct, anderer UTM-Besuch, First bleibt/Last wechselt, gclid/gbraid/wbraid, Referrer Suche/Social/Referral/intern, TTL, ungültige Werte, XSS, keine PII; Consent none/api, Widerruf, Cookie-Attribute).
+- Unit: 140 Tests, 593 Assertions – grün (neu `TrackingTest`: Parsing/TTL/Bereinigung, Feldabbildung, Aliase, Mail nur mit Zuordnung, Event ohne PII, Consent-Default).
+- Integration: 20 Tests, 93 Assertions – grün.
+- HTTP je SEO-Modus – grün: Core 73/597 (23 übersprungen), Yoast 73/592 (24), Rank Math 73/604 (22), Konflikt 73/464 (27). Neu `TrackingHttpTest` (10 Tests): Standard aus, Provider `none` ignoriert Marketingdaten, Skripte seitenweit bzw. nur mit Formular, Propstack-Zuordnung aktiv/inaktiv (Mail-Capture), Manipulation/XSS, Event-Daten nur bei `mail_sent` (nicht bei Validierung, Spam, manipulierter ID, Mailfehler, Rate-Limit, anderem Formular), dataLayer aus, neue Lead-ID bei Wiederverwendung, keine Klick-IDs/Attribution in Logs.
+- Browser (Edge): ohne Consent kein Cookie/0 Events/Anfrage ok; mit Consent Google Ads → Facebook → Direct ⇒ First google, Last facebook; Cookie 90 Tage, SameSite=Lax, Pfad `/Picaflor/`, 459 B; Validierungsfehler 0, Erfolg genau 1 Event, 2× DOM-Event 0, gefälschtes Event 0, Reload 0, Spam 0, Mailfehler 0, Rate-Limit 0; Widerruf löscht Cookie; dataLayer ohne PII/Klick-ID; keine externen Requests; keine JS-Fehler; Detailseiten-Regression (Layout 390–1366 px, Lightbox, Anker, ohne JS) unverändert.
+- Skriptgrößen: `psl-tracking.js` 8,0 KB roh / 3,2 KB gzip, `psl-lead-event.js` 3,9 KB / 1,7 KB.
+- **Nicht durchgeführt:** Staging-Smoke-Test auf DomainFactory (kein Zugang), reales Consent-Tool, GTM-Vorschau, Propstack-E2E (BLOCKED).
 
 ## Ergebnisse Release-Candidate-Abnahme (2026-10-06, 0.4.1)
 
@@ -147,4 +158,3 @@ Bericht: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md).
 
 - **Avada (Phase 2/3):** reale Testumgebung, Header/Footer/Container, Lightbox, mobil
 - **CF7 (Phase 4):** Formatter-Unit-Tests, manipulierte `property_id`, Honeypot, Rate-Limit; Ende-zu-Ende-Test in Propstack nur nach Freigabe
-- **Tracking (Phase 6):** genau ein `property_lead` nach Erfolg, keiner bei Fehler; keine PII im dataLayer; kein Cookie ohne Consent
