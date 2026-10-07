@@ -8,22 +8,11 @@ use PropstackLite\Domain\Property;
  * Zugriff auf `{prefix}psl_properties`.
  *
  * Sichtbarkeit wird hier erzwungen: Öffentliche Abfragen liefern nur Zeilen mit
- * `state = 'active'` UND `status_id` in der übergebenen Whitelist öffentlicher Status.
+ * `state = 'active'` UND `status_id` in der übergebenen Whitelist öffentlicher Status
+ * (WHERE/ORDER BY der Suche: SearchQueryBuilder).
  * Alle Abfragen laufen über $wpdb->prepare bzw. $wpdb->insert/update.
  */
 final class PropertyStore {
-
-	/** Hauptpreis-Ausdruck: Kaufpreis bzw. Kaltmiete (Fallback Warmmiete). */
-	private const PRICE_EXPR = "(CASE WHEN marketing_type = 'RENT' THEN COALESCE(base_rent, total_rent) ELSE price END)";
-
-	private const SORT_COLUMNS = [
-		'created_at'   => 'remote_created_at',
-		'updated_at'   => 'remote_updated_at',
-		'price'        => self::PRICE_EXPR,
-		'living_space' => 'living_space',
-		'rooms'        => 'rooms',
-		'city'         => 'city',
-	];
 
 	public function __construct( private \wpdb $db, private string $table ) {}
 
@@ -130,66 +119,29 @@ final class PropertyStore {
 	}
 
 	/**
-	 * Öffentliche Liste. Ohne öffentliche Status gibt es keine Treffer (sichere Voreinstellung).
+	 * Öffentliche Suche (Phase 7): COUNT-Query für die Gesamtzahl plus eine Seite per LIMIT/OFFSET.
+	 * Nur die Zeilen der angefragten Seite werden geladen und dekodiert. Ohne öffentliche Status
+	 * gibt es keine Treffer (sichere Voreinstellung).
 	 *
 	 * @param list<int> $publicStatusIds
-	 * @return array{items: list<Property>, total: int}
 	 */
-	public function queryPublic( array $publicStatusIds, ListCriteria $criteria ): array {
-		$publicStatusIds = array_values( array_filter( array_map( 'intval', $publicStatusIds ), static fn ( $id ) => $id > 0 ) );
-		if ( [] === $publicStatusIds ) {
-			return [ 'items' => [], 'total' => 0 ];
+	public function search( array $publicStatusIds, PropertySearchCriteria $criteria ): PropertySearchResult {
+		$where = SearchQueryBuilder::where( $publicStatusIds, $criteria );
+		if ( null === $where ) {
+			return new PropertySearchResult( [], 0, $criteria );
+		}
+		[ $whereSql, $params ] = $where;
+
+		$total = (int) $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$this->table} WHERE {$whereSql}", $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		if ( 0 === $total || $criteria->offset() >= $total ) {
+			return new PropertySearchResult( [], $total, $criteria );
 		}
 
-		$where  = [ 'state = %s', 'data IS NOT NULL' ];
-		$params = [ StoredProperty::STATE_ACTIVE ];
-
-		$where[] = 'status_id IN (' . implode( ',', array_fill( 0, count( $publicStatusIds ), '%d' ) ) . ')';
-		$params  = array_merge( $params, $publicStatusIds );
-
-		if ( null !== $criteria->marketingType ) {
-			$where[]  = 'marketing_type = %s';
-			$params[] = $criteria->marketingType;
-		}
-		if ( null !== $criteria->rsType ) {
-			$where[]  = 'rs_type = %s';
-			$params[] = $criteria->rsType;
-		}
-		if ( null !== $criteria->city ) {
-			$where[]  = 'city = %s';
-			$params[] = $criteria->city;
-		}
-		if ( null !== $criteria->zipCode ) {
-			$where[]  = 'zip_code = %s';
-			$params[] = $criteria->zipCode;
-		}
-		if ( null !== $criteria->priceFrom ) {
-			$where[]  = self::PRICE_EXPR . ' >= %f';
-			$params[] = $criteria->priceFrom;
-		}
-		if ( null !== $criteria->priceTo ) {
-			$where[]  = self::PRICE_EXPR . ' <= %f';
-			$params[] = $criteria->priceTo;
-		}
-		$exclude = array_values( array_filter( array_map( 'intval', $criteria->excludeIds ) ) );
-		if ( [] !== $exclude ) {
-			$where[] = 'propstack_id NOT IN (' . implode( ',', array_fill( 0, count( $exclude ), '%d' ) ) . ')';
-			$params  = array_merge( $params, $exclude );
-		}
-
-		$whereSql = implode( ' AND ', $where );
-		$total    = (int) $this->db->get_var( $this->db->prepare( "SELECT COUNT(*) FROM {$this->table} WHERE {$whereSql}", $params ) );
-
-		$sortExpr = self::SORT_COLUMNS[ $criteria->sortBy ] ?? self::SORT_COLUMNS['created_at'];
-		$dir      = 'asc' === $criteria->order ? 'ASC' : 'DESC';
-		$offset   = ( $criteria->page - 1 ) * $criteria->perPage;
-
-		$rows = $this->db->get_results(
+		$orderBy = SearchQueryBuilder::orderBy( $criteria );
+		$rows    = $this->db->get_results(
 			$this->db->prepare(
-				"SELECT * FROM {$this->table} WHERE {$whereSql}
-				 ORDER BY ({$sortExpr} IS NULL) ASC, {$sortExpr} {$dir}, propstack_id DESC
-				 LIMIT %d OFFSET %d",
-				array_merge( $params, [ $criteria->perPage, $offset ] )
+				"SELECT * FROM {$this->table} WHERE {$whereSql} ORDER BY {$orderBy} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_merge( $params, [ $criteria->perPage, $criteria->offset() ] )
 			),
 			ARRAY_A
 		);
@@ -201,7 +153,68 @@ final class PropertyStore {
 				$items[] = $stored->property;
 			}
 		}
-		return [ 'items' => $items, 'total' => $total ];
+		return new PropertySearchResult( $items, $total, $criteria );
+	}
+
+	/**
+	 * Filteroptionen aus den tatsächlich öffentlichen Objekten – eine GROUP-BY-Abfrage über Spalten,
+	 * kein JSON-Dekodieren. `$base` sind feste Einschränkungen (Shortcode-Attribute), keine Besucherfilter.
+	 *
+	 * @param list<int> $publicStatusIds
+	 * @return array{marketing: array<string, int>, rsTypes: array<string, int>, cities: array<string, int>, plotArea: bool}
+	 */
+	public function filterOptions( array $publicStatusIds, PropertySearchCriteria $base ): array {
+		$options = [ 'marketing' => [], 'rsTypes' => [], 'cities' => [], 'plotArea' => false ];
+		$where   = SearchQueryBuilder::where( $publicStatusIds, $base );
+		if ( null === $where ) {
+			return $options;
+		}
+		[ $whereSql, $params ] = $where;
+
+		$rows = $this->db->get_results(
+			$this->db->prepare(
+				"SELECT marketing_type, rs_type, TRIM(city) AS city, COUNT(*) AS n, MAX(plot_area > 0) AS has_plot
+				 FROM {$this->table} WHERE {$whereSql} GROUP BY marketing_type, rs_type, TRIM(city)", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				$params
+			),
+			ARRAY_A
+		);
+
+		$cityLabels = [];
+		foreach ( (array) $rows as $row ) {
+			$n = (int) $row['n'];
+			if ( in_array( $row['marketing_type'], [ 'BUY', 'RENT' ], true ) ) {
+				$options['marketing'][ $row['marketing_type'] ] = ( $options['marketing'][ $row['marketing_type'] ] ?? 0 ) + $n;
+			}
+			if ( null !== $row['rs_type'] && '' !== $row['rs_type'] ) {
+				$options['rsTypes'][ $row['rs_type'] ] = ( $options['rsTypes'][ $row['rs_type'] ] ?? 0 ) + $n;
+			}
+			$city = trim( (string) preg_replace( '/\s+/u', ' ', (string) $row['city'] ) );
+			if ( '' !== $city ) {
+				// Schreibvarianten („berlin“/„Berlin“) zusammenfassen; die erste Schreibweise gewinnt.
+				$key                = mb_strtolower( $city );
+				$cityLabels[ $key ] = $cityLabels[ $key ] ?? $city;
+				$options['cities'][ $cityLabels[ $key ] ] = ( $options['cities'][ $cityLabels[ $key ] ] ?? 0 ) + $n;
+			}
+			if ( '1' === (string) $row['has_plot'] ) {
+				$options['plotArea'] = true;
+			}
+		}
+		// Alphabetisch, Umlaute wie Grundbuchstaben (unabhängig von der Server-Locale).
+		$sortKey = static fn ( string $v ): string => strtr( mb_strtolower( $v ), [ 'ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss' ] );
+		uksort( $options['cities'], static fn ( $a, $b ) => strcmp( $sortKey( (string) $a ), $sortKey( (string) $b ) ) );
+		return $options;
+	}
+
+	/**
+	 * Öffentliche Liste mit den Kriterien vor Phase 7 (rückwärtskompatibel; intern über search()).
+	 *
+	 * @param list<int> $publicStatusIds
+	 * @return array{items: list<Property>, total: int}
+	 */
+	public function queryPublic( array $publicStatusIds, ListCriteria $criteria ): array {
+		$result = $this->search( $publicStatusIds, $criteria->toSearchCriteria() );
+		return [ 'items' => $result->items, 'total' => $result->total ];
 	}
 
 	/** @return array<string, int> Anzahl Zeilen je Zustand */
@@ -216,7 +229,7 @@ final class PropertyStore {
 
 	/** @param list<int> $publicStatusIds */
 	public function countVisible( array $publicStatusIds ): int {
-		return $this->queryPublic( $publicStatusIds, new ListCriteria( perPage: 1 ) )['total'];
+		return $this->search( $publicStatusIds, new PropertySearchCriteria( perPage: 1 ) )->total;
 	}
 
 	/**
@@ -312,6 +325,7 @@ final class PropertyStore {
 			'living_space'      => $p->mainArea(),
 			'plot_area'         => $p->plotArea,
 			'rooms'             => $p->rooms,
+			'search_price'      => $p->searchPrice(),
 			'remote_created_at' => self::toMysql( $p->createdAt ),
 			'remote_updated_at' => self::toMysql( $p->updatedAt ),
 		];

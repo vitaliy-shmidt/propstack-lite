@@ -143,9 +143,12 @@ final class Formatter {
 		};
 	}
 
-	/** @return array{label: string, value: string} Preiszeile der Liste – nie „0 €“. */
+	/** @return array{label: string, value: string} Preiszeile der Liste – nie „0 €“; „Preis auf Anfrage“ hat Vorrang. */
 	public static function priceRow( Property $property ): array {
 		if ( $property->isRent() ) {
+			if ( $property->priceOnRequest ) {
+				return [ 'label' => 'Miete', 'value' => 'auf Anfrage' ];
+			}
 			if ( null !== $property->baseRent ) {
 				return [ 'label' => 'Kaltmiete', 'value' => (string) self::money( $property->baseRent ) ];
 			}

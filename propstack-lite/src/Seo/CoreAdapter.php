@@ -17,6 +17,24 @@ final class CoreAdapter {
 		add_filter( 'pre_get_document_title', [ $this, 'title' ], 20 );
 		add_filter( 'wp_robots', [ $this, 'robots' ], 20 );
 		add_action( 'wp_head', [ $this, 'head' ], 1 );
+		// Immobilienübersicht (normale WordPress-Seite): nur Canonical, Robots und Seitenzusatz ergänzen.
+		add_filter( 'get_canonical_url', [ $this, 'listingCanonical' ], 20 );
+		add_filter( 'document_title_parts', [ $this, 'listingTitleParts' ], 20 );
+	}
+
+	/** WordPress' eigener Canonical der Seite (rel_canonical) → selbstreferenzierende Listen-URL. */
+	public function listingCanonical( mixed $url ): mixed {
+		$listing = $this->context->listing();
+		return null === $listing ? $url : $listing->canonical;
+	}
+
+	public function listingTitleParts( mixed $parts ): mixed {
+		$listing = $this->context->listing();
+		if ( null === $listing || null === $listing->titleSuffix || ! is_array( $parts ) ) {
+			return $parts;
+		}
+		$parts['page'] = $listing->titleSuffix;
+		return $parts;
 	}
 
 	/** Vollständiger Titel inkl. Marke; pre_get_document_title wird ungefiltert ausgegeben → escapen. */
@@ -26,7 +44,7 @@ final class CoreAdapter {
 	}
 
 	public function robots( array $robots ): array {
-		$data = $this->context->data();
+		$data = $this->context->data() ?? $this->listingNoindex();
 		if ( null === $data ) {
 			return $robots;
 		}
@@ -34,7 +52,7 @@ final class CoreAdapter {
 	}
 
 	/** wp_robots-Array: index/noindex und follow/nofollow exklusiv setzen, sonstige Direktiven behalten. */
-	public static function applyRobots( array $robots, SeoData $data ): array {
+	public static function applyRobots( array $robots, SeoData|ListingSeoData $data ): array {
 		unset( $robots['index'], $robots['noindex'], $robots['follow'], $robots['nofollow'] );
 		$robots[ $data->robots['index'] ? 'index' : 'noindex' ]   = true;
 		$robots[ $data->robots['follow'] ? 'follow' : 'nofollow' ] = true;
@@ -78,5 +96,14 @@ final class CoreAdapter {
 	/** JSON für <script>: `<`, `>`, `&`, `'` als \u-Escapes → kein Ausbruch aus dem Script-Block. */
 	public static function json( array $data ): string {
 		return (string) wp_json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+	}
+
+	/**
+	 * Übersicht: nur herabstufen (noindex bei Filtern/Sortierung/ungültiger Seite), nie eine
+	 * redaktionelle noindex-Einstellung der Seite oder „Suchmaschinen abhalten“ auf index heben.
+	 */
+	private function listingNoindex(): ?ListingSeoData {
+		$listing = $this->context->listing();
+		return null !== $listing && ! $listing->isIndexable() ? $listing : null;
 	}
 }

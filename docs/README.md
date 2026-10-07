@@ -10,7 +10,7 @@
 | Phase 5 – SEO | abgeschlossen (2026-10-06) |
 | Release-Candidate-Abnahme | abgeschlossen (2026-10-06), **PASS WITH OPEN ITEMS** – [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md) |
 | Phase 6 – Tracking | abgeschlossen (2026-10-06), Standard aus; Staging-Smoke-Test und reales Consent-Tool offen |
-| Phase 7 – Filter/UX | geplant |
+| Phase 7 – Filter/UX | abgeschlossen (2026-10-07), Version 0.6.0 – [listing.md](listing.md) |
 | Phase 8 – Hardening | geplant |
 
 ## Projektziel
@@ -34,7 +34,7 @@ Besucher ──► [propstack_list] ──────────────�
 
 Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [architecture.md](architecture.md).
 
-## Aktueller Entwicklungsstand (nach Phase 6)
+## Aktueller Entwicklungsstand (nach Phase 7)
 
 **Implementiert:**
 - API-Client (nur lesend), Whitelist-Mapper, einheitliches `Property`-Modell, Tabelle `{prefix}psl_properties`
@@ -48,7 +48,9 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 
 - **Attribution & Conversion (Phase 6):** First Touch + Last Non-Direct im First-Party-Cookie `psl_attr` (90 Tage, nur mit Marketing-Consent), `ConsentProviderInterface` (Standard: kein Consent), `property_lead` im dataLayer nur nach erfolgreichem CF7-Versand, dedupliziert über die Lead-ID, optionale Propstack-`client_cf_*`-Zuordnung; lädt kein GTM/GA4/Pixel ([tracking.md](tracking.md)).
 
-**Noch nicht implementiert:** ähnliche Immobilien, Filter-UI/Pagination (Phase 7).
+- **Immobiliensuche (Phase 7):** `/immobilien/` mit Filtern (Kaufen/Mieten, Objektart-Gruppen, Ort, Preis von/bis auf Kaufpreis bzw. Kaltmiete, Wohnfläche ab, Grundstücksfläche ab, Zimmer ab), Sortierung (Neueste, Preis, Wohnfläche, Zimmer, Zuletzt aktualisiert), Pagination (12/24/48, Parameter `seite`) – alles per GET-Parameter, serverseitig gewhitelistet, ohne JavaScript nutzbar; Self-Canonical, Filterseiten `noindex, follow`; Schema v2 (`search_price`) ([listing.md](listing.md)).
+
+**Noch nicht implementiert:** ähnliche Immobilien, Favoriten/Merkliste, Suchaufträge, Kartensuche (nicht Teil von Phase 7).
 
 ## Dokumente
 
@@ -61,6 +63,7 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 | [sync.md](sync.md) | Sync-Arten, Statuslogik, Cron, CLI, Diagnose |
 | [routing-seo.md](routing-seo.md) | URLs, Rewrite-Regeln, Statusmatrix, Kanonisierung |
 | [seo.md](seo.md) | SEO: Title/Description/Robots/OG/JSON-LD, Core-/Yoast-/Rank-Math-Modus, Sitemaps |
+| [listing.md](listing.md) | Übersicht/Suche: URL-Parameter, Filter, Sortierung, Pagination, Shortcode, SEO, Security, Query-Architektur, Indizes, Lasttest |
 | [frontend.md](frontend.md) | Detailseite: Template-Teile, ViewModel, Formatter, Galerie/Lightbox, Bildfilter, Energie, Ansprechpartner, Hooks, Overrides |
 | [leads.md](leads.md) | Immobilienanfragen: CF7 → Propstack-Mail, Feldzuordnung, Mailformat, Sicherheit, E2E-Anleitung |
 | [tracking.md](tracking.md) | Attribution (First/Last Non-Direct), Cookie, Consent-Provider, `property_lead`, Propstack-Zuordnung, Staging-Konfiguration |
@@ -78,7 +81,7 @@ Vollständige Liste vor Staging/Produktion: [acceptance-rc-2026-10-06.md](accept
 - **Staging (DomainFactory, PHP 8.2, Avada):** laut Rückmeldung laufen Sync, Übersicht, Detailseite und Formular; ein eigener Smoke-Test durch Claude war mangels Zugang nicht möglich – Avada-Checkliste in [avada.md](avada.md).
 - **Tracking:** Consent-Tool der Live-Site noch nicht festgelegt/angebunden; bis dahin bleibt Tracking wirkungslos (Provider `none`).
 - **Avada nicht verifiziert:** Getestet gegen Wegwerf-Instanzen (WordPress 7.1.2 in `/Picaflor/` und frisch in `/rc-site/`, Twenty Twenty-One/-Five, CF7 6.1.7, Yoast 28.6, Rank Math 1.0.279, WP Super Cache 3.1.4, PHP 8.3 und 8.2). Avada und die tatsächliche SEO-/Cache-Konfiguration der Live-Site gelten erst mit Staging als verifiziert.
-- Übersicht ohne Blätterfunktion (Phase 7): Objekte jenseits von `per` erscheinen nur über die Sitemap; `per` auf der Live-Seite ausreichend hoch setzen.
+- Übersicht (0.6.0): bestehende `[propstack_list]`-Einbindungen werden interaktiv (Filter, Sortierung, Pagination). Auf der Live-Site Teaser-Einbindungen außerhalb von `/immobilien/` auf `show_filters="0" show_sort="0" pagination="0"` umstellen, auf `/immobilien/` ein hohes `per` auf 12 zurücksetzen und `heading="h2"` prüfen ([listing.md](listing.md#shortcode-propstack_list)). Darstellung des Filterformulars unter Avada nicht verifiziert.
 - SEO-Integration mit Yoast SEO 28.6 und Rank Math 1.0.279 nur in der Testinstanz geprüft; andere SEO-Plugins (AIOSEO, SEOPress …) werden nicht erkannt ([seo.md](seo.md)).
 - Propstack-E2E-Test der Anfragen steht weiter aus ([leads.md](leads.md)).
 - Der API-Key hat nur Leserechte auf Objekte, Status und Projekte. Webhooks (`POST /v1/hooks`) muss ein Propstack-Admin registrieren.

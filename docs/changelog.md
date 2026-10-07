@@ -1,5 +1,26 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-07 – Phase 7: Immobiliensuche, Filter, Pagination, Sortierung (Version 0.6.0)
+
+Dokumentation: [listing.md](listing.md).
+
+**Wichtigste Änderungen**
+- `[propstack_list]` wird zur Immobiliensuche: GET-Formular (ohne JS nutzbar) mit Kaufen/Mieten, Objektart-Gruppen (`FieldCatalog::TYPE_GROUPS`), Ort (aus öffentlichen Objekten), Preis von/bis (Kaufpreis bzw. Kaltmiete), Wohnfläche ab, Grundstücksfläche ab, Zimmer ab; Sortierung (Neueste, Preis ↑↓, Wohnfläche ↑↓, Zimmer, Zuletzt aktualisiert); Pagination (12/24/48, Parameter `seite`); Trefferanzahl, Leerzustand, „Filter zurücksetzen“; mobiles Einklappen per `<details>`.
+- Neue Query-API: `Storage\PropertySearchCriteria`, `SearchQueryBuilder`, `PropertySearchResult`, `PropertyStore::search()`/`filterOptions()`; `queryPublic()`/`ListCriteria` bleiben als kompatible Hülle.
+- Neue Frontend-Klassen: `ListingConfig`, `ListingRequest` (zentrale Parameter-Whitelist), `ListingService`, `ListingContext`, `Pagination`; Templates `parts/list-filters.php`, `parts/list-pagination.php`; überarbeitete `list.php`, `parts/card.php`, `psl-list.css`; neues `assets/js/psl-list.js`.
+- SEO der Übersicht: `SeoService::forListing()`, `Seo\ListingSeoData`; Self-Canonical (auch Seite n), Filter/Sortierung/ungültige Seite `noindex, follow` + `X-Robots-Tag`, Seitenzusatz im Title; Core-/Yoast-/Rank-Math-Adapter, Konflikt-Sicherheitsnetz für Canonical. Das Plugin stuft Robots nur herab.
+- Neue Shortcode-Attribute `show_filters`, `show_sort`, `pagination`, `sort`, `property_type`; Admin-Hilfe aktualisiert.
+
+**Bugs behoben:** Karten zeigten bei Mietobjekten mit „Preis auf Anfrage“ die Kaltmiete (jetzt „Miete: auf Anfrage“ wie auf der Detailseite).
+
+**DB-Migration:** Schema v2 – Spalte `search_price` (Backfill aus gespeichertem JSON), Index `price_idx` entfernt; läuft bei Aktivierung und beim Plugin-Start nach Update ([database.md](database.md#migrationen)).
+
+**Breaking Changes:** keine API-Brüche. Verhaltensänderungen: bestehende `[propstack_list]`-Einbindungen zeigen nun Formular und Pagination (statisch mit `show_filters="0" show_sort="0" pagination="0"`); Shortcode-Preisgrenzen und Preissortierung nutzen `search_price` (Preis auf Anfrage/Warmmiete-only fallen bei Preisfiltern heraus); Kartentext CTA „Details ansehen“; Kartenbild 600 × 450.
+
+**Abweichungen von der Vorgabe (begründet):** Seitenparameter `seite` statt `page` (WordPress leitet `?page=2` per 301 um); Standardsortierung `remote_created_at` statt `content_changed_at` (stabil, „Zuletzt aktualisiert“ als Option); Kartenbild ohne `srcset` (keine Propstack-Zwischengröße, `big` = 1920 px).
+
+**Offene Punkte:** Avada-Darstellung des Formulars und der Pagination, Anpassung der Shortcodes auf der Live-Site, echte Geräte, Lighthouse mit echten Bildern.
+
 ## 2026-10-06 – Phase 6: Attribution und Conversion-Tracking (Version 0.5.0)
 
 **Staging-Smoke-Test:** nicht durch Claude durchgeführt – für die DomainFactory-Instanz lagen weder URL noch Zugang vor. Laut Rückmeldung laufen dort Sync, Übersicht, Detailseite (Avada) und Formular. Checkliste in [avada.md](avada.md); keine Avada-spezifischen Fixes.

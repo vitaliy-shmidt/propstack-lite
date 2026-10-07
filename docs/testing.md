@@ -4,7 +4,7 @@
 
 | Ebene | Werkzeug | Läuft ohne WordPress | Inhalt |
 |---|---|---|---|
-| JavaScript | `node --test tests/js/tracking.test.cjs` (Node ≥ 18, ohne Abhängigkeiten) | ja | Attributionslogik: Touches, First/Last, TTL, Klassifikation, Bereinigung/XSS, Consent/Cookie |
+| JavaScript | `node --test tests/js/tracking.test.cjs tests/js/list.test.cjs` (Node ≥ 18, ohne Abhängigkeiten; Dateien explizit angeben) | ja | Attributionslogik: Touches, First/Last, TTL, Klassifikation, Bereinigung/XSS, Consent/Cookie; Such-Skript (leere/Standardwerte nicht senden) |
 | Unit | PHPUnit 10 (`tests/Unit`) | ja | Mapper/Datenschutzregeln, Sanitizer, Slugger, Formatter, StateResolver, Client (Retry, Fehler, Secrets), Pagination, SEO-Werte (Title, Description, Robots, OG, JSON-LD) |
 | Integration | PHPUnit 10 (`tests/Integration`) + WordPress-Wegwerfinstanz | nein | Store (Sichtbarkeit, Filter, SQL-Whitelist), alle Sync-Übergänge mit simuliertem Propstack (`FakePropstack`), Shortcode-Ausgabe, keine HTTP-Requests im Frontend |
 | HTTP (End-to-End) | PHPUnit 10 (`tests/Http`) + laufender Webserver der Testinstanz | nein | echte Requests: Routing-Matrix 200/301/404/410, Legacy, Unterverzeichnis, Head-Tags je SEO-Modus ohne Dubletten, Schema-Validierung, Sitemaps, Datenschutz und XSS im HTML, 0 Propstack-Requests |
@@ -67,6 +67,18 @@ In der Testinstanz installiert (standardmäßig inaktiv): Yoast SEO 28.6, Rank M
 - StateResolver: 19 Zustandskombinationen
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
+
+## Ergebnisse Phase 7 (2026-10-07, 0.6.0)
+
+- JavaScript: 20 Tests – grün (neu `list.test.cjs`: 3).
+- Unit: 209 Tests, 947 Assertions – grün unter PHP 8.3.2 **und** 8.2.12 (neu `ListingSearchTest`, 69 Tests: gültige/ungültige Filter, Defaults, Normalisierung, Security-Eingaben – SQL-Injection in `city`/`sort`, XSS, negative/riesige Werte, Arrays statt Skalar, `seite[]=1`, riesige `per`, unbekannte/Tracking-Parameter –, feste Shortcode-Einschränkungen, statische Liste, alle Sortierungen mit Tie-Breaker, Platzhalter-SQL, Pagination Seite 1/2/zu hoch/ohne Treffer, Auslassungen, `listingUrl`, `forListing`, `searchPrice`).
+- Integration: 39 Tests, 214 Assertions – grün (neu `ListingSearchIntegrationTest`, 19 Tests mit 12 synthetischen Objekten: Kauf/Miete, Wohnung/Haus/Gewerbe/Ferienwohnung, mehrere Orte/Preise/Flächen/Zimmer, reserviert, nicht öffentlich, verkauft, entfernt, Preis auf Anfrage, nur Warmmiete; jeder Filter und Kombinationen liefern exakt die erwarteten IDs; Sortierungen; stabile Seiten bei gleichen Zeitstempeln; Filteroptionen; Shortcode mit GET: Formularzustand, Pagination-Links, Trefferanzahl, Leerzustände, XSS, keine Freischaltung; Adressschutz und Bild-Fallback auf Karten; 0 HTTP-Requests; Migration v1 → v2).
+- HTTP je SEO-Modus – grün: Core 83/999 (23 übersprungen), Yoast 83/994 (24), Rank Math 83/1006 (22), Konflikt 83/866 (27). Neu `ListingHttpTest` (10 Tests, läuft in jedem Modus): `/immobilien/` index + Self-Canonical, `?seite=2` index + Self-Canonical + „Seite 2“ im Title, Filter `marketing_type=buy|rent`, `property_type`, `city`, `price_max`, `living_space_min`, `rooms_min`, Kombinationen → exakte Trefferzahl, `noindex, follow` + `X-Robots-Tag`; Pagination mit Filtern; Sortierungen; Leerzustand; Seite hinter der letzten; Trackingparameter ändern weder SEO noch Treffer; 13 feindliche/ungültige Parameter (SQL, XSS, Arrays, riesige Werte, `status`) ohne Wirkung und ohne PHP-Warnings (`debug.log`); 0 Propstack-Requests (HTTP-Spy).
+- Befunde während der Tests (behoben): Konflikt-Modus – das nicht integrierte Rank Math gab auf der Übersicht den Seiten-Permalink als zweiten Canonical aus (Sicherheitsnetz erweitert). Yoast gibt auf noindex-Seiten keinen Canonical aus (Yoast-Verhalten, Test akzeptiert „keiner oder Self“).
+- Browser (Edge headless, 500 synthetische Objekte): kein horizontaler Überlauf bei 390/768/1024/1366 px, CLS 0, Karten-Bilder exakt 4:3, alle Felder mit Label, eindeutige IDs; mit JS: Absenden ergibt `?marketing_type=rent&price_max=2000` (ohne leere Parameter), „Weiter“ behält Filter, Formularzustand auf Seite 2 korrekt, Browser-Zurück funktioniert; ohne JS: Panel offen, Absenden funktioniert (URL mit leeren Parametern, Server ignoriert sie); mobil mit JS: Panel eingeklappt, per Tastatur (Enter auf „Filter“) zu öffnen, mit aktivem Filter offen; keine JS-Fehler, keine externen Requests (außer den synthetischen Bild-URLs). Screenshots nicht im Repository.
+- Lasttest 500 Objekte: alle Abfragen `type=ref`, < 10 ms inkl. Hydration ([listing.md](listing.md#query-architektur-und-indizes)).
+- Testinstanz: Migration v1 → v2 lief beim ersten Aufruf automatisch (Spalte ergänzt, Bestandsobjekt nachberechnet).
+- **Nicht durchgeführt:** Avada/Live-Site, echte Mobilgeräte, Lighthouse der Übersicht (Bild-URLs synthetisch).
 
 ## Ergebnisse Phase 6 (2026-10-06, 0.5.0)
 

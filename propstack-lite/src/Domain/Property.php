@@ -72,6 +72,19 @@ final class Property {
 		return $this->price;
 	}
 
+	/**
+	 * Preisbasis der Suche (Filter und Sortierung, Spalte `search_price`): Kaufpreis bzw. Kaltmiete.
+	 * `null` bei „Preis auf Anfrage“ oder fehlendem Wert – nie 0, und ein verborgener Preis wird so
+	 * auch nicht über Preisfilter erratbar. Warmmiete zählt bewusst nicht (Filter „Kaltmiete“).
+	 */
+	public function searchPrice(): ?float {
+		if ( $this->priceOnRequest ) {
+			return null;
+		}
+		$value = $this->isRent() ? $this->baseRent : $this->price;
+		return null !== $value && $value > 0 ? $value : null;
+	}
+
 	public function mainImage(): ?Image {
 		return $this->images[0] ?? null;
 	}

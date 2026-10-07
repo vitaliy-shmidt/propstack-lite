@@ -88,6 +88,26 @@ final class SeoService {
 		);
 	}
 
+	/**
+	 * Immobilienübersicht (Phase 7):
+	 * - Standardansicht (Seite 1 und weitere Seiten ohne Filter/Sortierung) → index, follow
+	 * - Filter, abweichende Sortierung oder Seitengröße → noindex, follow (keine indexierbaren
+	 *   Filterkombinationen; Links zu Objekten bleiben verfolgbar)
+	 * - Seite hinter der letzten Seite → noindex, follow
+	 * - Canonical immer selbstreferenzierend auf die normalisierte URL (nur validierte Parameter in
+	 *   fester Reihenfolge, ohne Tracking-Parameter) – Seite n zeigt nicht auf Seite 1.
+	 *
+	 * @param string $selfUrl normalisierte URL der Ansicht (UrlGenerator::listingUrl)
+	 */
+	public function forListing( string $selfUrl, int $page, bool $customized, bool $outOfRange ): ListingSeoData {
+		return new ListingSeoData(
+			canonical: $selfUrl,
+			robots: [ 'index' => ! $customized && ! $outOfRange, 'follow' => true ],
+			page: max( 1, $page ),
+			titleSuffix: $page > 1 ? 'Seite ' . $page : null
+		);
+	}
+
 	/* ------------------------------------------------------------------ Title */
 
 	/**

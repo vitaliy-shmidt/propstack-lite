@@ -8,6 +8,8 @@ use PropstackLite\Api\Client;
 use PropstackLite\Api\UnitsEndpoint;
 use PropstackLite\Cli\Command;
 use PropstackLite\Frontend\DetailController;
+use PropstackLite\Frontend\ListingContext;
+use PropstackLite\Frontend\ListingService;
 use PropstackLite\Frontend\ListShortcode;
 use PropstackLite\Frontend\TemplateLoader;
 use PropstackLite\Leads\Cf7Integration;
@@ -77,8 +79,9 @@ final class Plugin {
 
 		( new Router() )->register();
 		( new DetailController( $store, $this->settings, $urls, $templates, new Clock() ) )->register();
-		( new ListShortcode( $store, $this->settings, $templates, $urls ) )->register();
-		( new SeoIntegration( new SeoContext( $urls ), new SitemapSource( $store, $this->settings, $urls ) ) )->register();
+		$listings  = new ListingService( $store, $this->settings ); // Phase 7: Suche/Filter/Pagination, Request-Cache
+		( new ListShortcode( $listings, $templates, $urls ) )->register();
+		( new SeoIntegration( new SeoContext( $urls, new ListingContext( $urls, $listings ) ), new SitemapSource( $store, $this->settings, $urls ) ) )->register();
 		( new PageCachePurger() )->register();
 		( new TrackingIntegration( $this->settings ) )->register(); // Phase 6: Attribution/Conversion (Standard: aus)
 

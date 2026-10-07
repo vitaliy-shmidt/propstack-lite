@@ -3,6 +3,7 @@
 namespace PropstackLite\Seo;
 
 use PropstackLite\Frontend\DetailController;
+use PropstackLite\Frontend\ListingContext;
 use PropstackLite\Routing\Router;
 use PropstackLite\Routing\UrlGenerator;
 
@@ -17,8 +18,42 @@ final class SeoContext {
 
 	private bool $resolved = false;
 	private ?SeoData $data = null;
+	private bool $listingResolved = false;
+	private ?ListingSeoData $listing = null;
 
-	public function __construct( private UrlGenerator $urls ) {}
+	public function __construct( private UrlGenerator $urls, private ?ListingContext $listingContext = null ) {}
+
+	/**
+	 * SEO-Werte einer Immobilienübersicht (Seite mit interaktivem `[propstack_list]`), sonst null.
+	 * Gilt nie auf Detailseiten (dort data()).
+	 */
+	public function listing(): ?ListingSeoData {
+		if ( $this->listingResolved ) {
+			return $this->listing;
+		}
+		if ( null === $this->listingContext || ! did_action( 'wp' ) ) {
+			return null;
+		}
+		$this->listingResolved = true;
+		if ( Router::isPropertyRequest() ) {
+			return null;
+		}
+		$request = $this->listingContext->request();
+		$pageUrl = $this->listingContext->pageUrl();
+		$result  = $this->listingContext->result();
+		if ( null === $request || null === $pageUrl || null === $result ) {
+			return null;
+		}
+		$data          = self::service()->forListing(
+			$this->urls->listingUrl( $pageUrl, $request->queryArgs() ),
+			$request->page,
+			$request->isCustomized(),
+			$result->isOutOfRange()
+		);
+		$filtered      = apply_filters( 'psl_listing_seo_data', $data, $request );
+		$this->listing = $filtered instanceof ListingSeoData ? $filtered : $data;
+		return $this->listing;
+	}
 
 	public static function service(): SeoService {
 		$brand = (string) apply_filters( 'psl_seo_brand', wp_strip_all_tags( (string) get_bloginfo( 'name' ) ) );

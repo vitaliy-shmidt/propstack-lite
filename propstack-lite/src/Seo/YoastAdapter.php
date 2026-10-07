@@ -11,6 +11,7 @@ namespace PropstackLite\Seo;
  *   (Objektbild oder – ohne öffentliches Bild – keines, auch nicht Yoasts Website-Standardbild)
  * - `wpseo_title`, `wpseo_metadesc`, `wpseo_canonical`, `wpseo_robots_array`
  * - `wpseo_opengraph_*`, `wpseo_twitter_*`
+ * - Immobilienübersicht (Phase 7): nur `wpseo_canonical`, `wpseo_robots_array`, `wpseo_title` (Seitenzusatz)
  * - `wpseo_schema_graph`: RealEstateListing, Place/Apartment/House, RealEstateAgent ergänzen
  *   (Yoasts eigene WebPage/WebSite/BreadcrumbList bleiben – keine zweite BreadcrumbList)
  */
@@ -54,7 +55,11 @@ final class YoastAdapter {
 
 	public function title( mixed $title ): mixed {
 		$data = $this->context->data();
-		return null === $data ? $title : $data->title; // Yoast escaped selbst
+		if ( null === $data ) {
+			$listing = $this->context->listing();
+			return null !== $listing && is_string( $title ) ? $listing->title( $title ) : $title;
+		}
+		return $data->title; // Yoast escaped selbst
 	}
 
 	public function description( mixed $description ): mixed {
@@ -65,11 +70,14 @@ final class YoastAdapter {
 	/** 410: leerer Canonical → Yoast gibt keinen aus. */
 	public function canonical( mixed $canonical ): mixed {
 		$data = $this->context->data();
-		return null === $data ? $canonical : (string) $data->canonical;
+		if ( null === $data ) {
+			return $this->context->listing()?->canonical ?? $canonical; // Übersicht: selbstreferenzierend
+		}
+		return (string) $data->canonical;
 	}
 
 	public function robots( mixed $robots ): mixed {
-		$data = $this->context->data();
+		$data = $this->context->data() ?? $this->listingNoindex();
 		if ( null === $data || ! is_array( $robots ) ) {
 			return $robots;
 		}
@@ -169,5 +177,14 @@ final class YoastAdapter {
 			return $fallback;
 		}
 		return $data->twitter[ $key ] ?? $fallback;
+	}
+
+	/**
+	 * Übersicht: nur herabstufen (noindex bei Filtern/Sortierung/ungültiger Seite), nie eine
+	 * redaktionelle noindex-Einstellung der Seite oder „Suchmaschinen abhalten“ auf index heben.
+	 */
+	private function listingNoindex(): ?ListingSeoData {
+		$listing = $this->context->listing();
+		return null !== $listing && ! $listing->isIndexable() ? $listing : null;
 	}
 }

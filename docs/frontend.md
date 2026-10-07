@@ -1,5 +1,7 @@
 # Frontend: Detailseite, Templates, Galerie
 
+> Übersicht/Suche (`[propstack_list]`, Filterformular, Karten, Pagination, `psl-list.css`/`psl-list.js`): [listing.md](listing.md).
+
 Stand: Phase 3 (2026-10-05). Alle Daten stammen aus dem lokalen `PropertyStore` – **keine API-Requests im Besucher-Request** (per HTTP-Test nachgewiesen).
 
 ## Datenweg zur Ausgabe
@@ -97,6 +99,7 @@ Nur öffentliche Propstack-Felder (`name` inkl. akademischem Titel, `position`, 
 | `psl_detail_container_classes` | Filter | CSS-Klassen des Wrappers |
 | `psl_template_vars` | Filter | Variablen beim Rendern von Teil-Templates |
 | `psl_overview_url` | Filter | URL der Übersicht |
+| `psl_listing_page_atts`, `psl_listing_seo_data` | Filter | Übersicht/Suche (Phase 7), siehe [listing.md](listing.md#hooks) |
 
 ## CSS
 

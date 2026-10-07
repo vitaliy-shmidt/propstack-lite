@@ -9,6 +9,7 @@ Detailseiten rendern ausschließlich aus dem lokalen `PropertyStore` – **kein 
 | URL | Bedeutung |
 |---|---|
 | `/immobilien/` | Übersicht – normale WordPress-Seite mit `[propstack_list]` (wird nicht vom Router behandelt) |
+| `/immobilien/?marketing_type=buy&city=Berlin&seite=2` | Übersicht mit Filtern/Pagination (Phase 7, GET-Parameter, [listing.md](listing.md)). Seitenparameter `seite`, weil WordPress `?page=2` per 301 auf `/immobilien/` umleitet und `/immobilien/2/` vom Detail-Router als ID 2 interpretiert würde |
 | `/immobilien/{slug}-{id}/` | dynamische Detailseite (kanonisch) |
 | `/immobilien/{id}/` | Kurzform → 301 |
 | `/immobilie/{slug}-{id}/`, `/immobilie/{id}/`, `/immobilie/?ps_id={id}` | Legacy (0.2.x) → 301 |
@@ -83,6 +84,10 @@ Vollständig beschrieben in [seo.md](seo.md). Kurzfassung:
 - **Statuscodes:** 200/301/404/410 wie oben; 410 ohne Weiterleitung, Legacy-URLs weiterhin 301.
 
 Warum 410 statt Redirect auf die Übersicht: Massen-Redirects auf eine Übersicht wertet Google als Soft-404; 410 signalisiert dauerhafte Entfernung und wird schneller deindexiert.
+
+## Übersicht (Phase 7)
+
+Canonical der Übersicht ist selbstreferenzierend auf die normalisierte URL (nur validierte Parameter, feste Reihenfolge, ohne Tracking-Parameter); Seite n verweist nicht auf Seite 1. Ungefiltert (auch Seite 2 ff.) `index, follow`; Filter, abweichende Sortierung/Seitengröße und Seiten hinter der letzten `noindex, follow` (Meta + `X-Robots-Tag`). Details und Modus-Besonderheiten (Yoast ohne Canonical auf noindex-Seiten): [listing.md](listing.md#seo-verhalten).
 
 ## Bekannte Einschränkungen
 

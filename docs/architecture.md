@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: nach Phase 4 (Plugin-Version 0.3.0). Geplante Teile sind als **Geplant** markiert.
+Stand: nach Phase 7 (Plugin-Version 0.6.0). Geplante Teile sind als **Geplant** markiert.
 
 ## Grundprinzipien
 
@@ -27,7 +27,9 @@ Propstack API ◄── Api\Client ◄── Api\UnitsEndpoint ◄── Sync\Sy
                                                              ▼
                                          Storage\PropertyStore → {prefix}psl_properties
                                                              ▲
-Besucher ─► [propstack_list] ─► Frontend\ListShortcode ─► TemplateLoader ─► templates/list.php
+Besucher ─► [propstack_list] (GET-Filter) ─► Frontend\ListShortcode ─► ListingConfig/ListingRequest (Whitelist)
+            ─► ListingService ─► PropertyStore::search()/filterOptions() (SearchQueryBuilder) ─► templates/list.php
+            <head>: Frontend\ListingContext ─► Seo\SeoContext::listing() ─► SeoService::forListing() ─► Adapter
 Besucher ─► /immobilien/{slug}-{id}/ ─► Routing\Router (Rewrite, Query-Vars, Legacy)
             ─► Frontend\DetailController ─► PropertyStore::find() ─► Routing\RouteResolver (200/404/410)
             ─► 301-Kanonisierung (Routing\UrlGenerator) ─► Frontend\PropertyViewModel
@@ -54,7 +56,8 @@ Besucher ─► psl-tracking.js (Consent, Attribution-Cookie) ─► psl-lead-ev
 | `Mapping\Sanitizer` | Typ-Normalisierung, Text/HTML-Bereinigung, URL-Host-Whitelist |
 | `Storage\Schema` | Tabellendefinition, `dbDelta`, Versionsoption |
 | `Storage\PropertyStore` | Upsert, Statusübergänge, öffentliche Abfrage mit Whitelist, `find()`, Audit |
-| `Storage\ListCriteria`, `StoredProperty` | Abfragekriterien (nur einschränkend), Zeilenobjekt |
+| `Storage\PropertySearchCriteria`, `SearchQueryBuilder`, `PropertySearchResult` | Phase 7: validierte Such-/Sortier-/Seitenkriterien; WHERE/ORDER BY nur mit Platzhaltern und Spalten-Whitelist; Ergebnis mit Gesamtzahl |
+| `Storage\ListCriteria`, `StoredProperty` | Kriterien im Format vor Phase 7 (→ `toSearchCriteria()`), Zeilenobjekt |
 | `Sync\SyncService` | Full/Incremental/Single, Reconcile, Bereinigung, Fehlerbehandlung |
 | `Sync\StateResolver` | reine Sync-Zustandslogik (testbar ohne WordPress) |
 | `Sync\SyncLock`, `SyncState`, `SyncResult`, `Scheduler` | Lock, Status-Option, Ergebnis, Cron-Planung |
@@ -70,7 +73,11 @@ Besucher ─► psl-tracking.js (Consent, Attribution-Cookie) ─► psl-lead-ev
 | `Frontend\Formatter` | deutsche Formatierung (Geld, Monatsbeträge, €/m², Flächen, Zimmer, Etage, Datum, Energiekennwert) und Enum-Übersetzung |
 | `assets/js/psl-gallery.js` | Lightbox (Vanilla JS, `<dialog>`, Tastatur/Touch), nur auf Detailseiten mit Bildern |
 | `Frontend\TemplateLoader` | Templates mit Theme-Override (`{theme}/propstack-lite/`), Header/Footer für klassische und Block-Themes |
-| `Frontend\ListShortcode` | Listenausgabe aus dem Store |
+| `Frontend\ListShortcode` | Übersicht/Suche: Formular, Trefferanzahl, Karten, Leerzustand, Pagination ([listing.md](listing.md)) |
+| `Frontend\ListingConfig`, `ListingRequest`, `Pagination` | Phase 7, ohne WordPress testbar: Shortcode-Attribute (feste Einschränkungen), GET-Whitelist/Normalisierung, Seitennavigation |
+| `Frontend\ListingService`, `ListingContext` | Request-Cache für Suche/Optionen; Erkennung der Listenseite für die SEO-Schicht im `<head>` |
+| `Seo\ListingSeoData` | Canonical/Robots/Seitenzusatz der Übersicht (aus `SeoService::forListing()`) |
+| `assets/js/psl-list.js` | optionales Progressive Enhancement der Suche (kurze URLs, mobiles Einklappen) |
 | `Theme\AvadaAdapter` | optional, nur bei aktivem Avada; markiert Seite/Wrapper (**nicht verifiziert**) |
 | `Admin\SettingsPage`, `Admin\Notices` | Einstellungen, Sync-/Lead-/SEO-Status, „Jetzt synchronisieren“, Hinweise (u. a. „Mehrere SEO-Plugins aktiv“) |
 | `Rest\WebhookController` | `POST /wp-json/propstack/v1/webhook` → plant Sync (kein Sync im Request) |
@@ -118,6 +125,10 @@ Eine Quelle für alle Werte: `Seo\SeoService` berechnet aus `Property`, `RouteDe
 ## Tracking-Architektur – implementiert (Phase 6)
 
 Attribution ausschließlich clientseitig im First-Party-Cookie (`psl-tracking.js`, seitenweit, nur mit Consent); das Formular-Skript überträgt sie nur bei aktuellem Consent im Hidden Field `psl_attr`, der Server (`Tracking\AttributionStorage`) validiert mit denselben Regeln. Consent über `Tracking\Consent\ConsentProviderInterface` (Standard `none`). Conversion-Event: Server hängt nach `mail_sent` öffentliche Event-Daten an die CF7-Antwort (`Tracking\LeadEvent`), `psl-lead-event.js` pusht `property_lead` einmal pro Lead-ID. Keine eigene Tabelle, keine externen Requests, kein GTM. Details: [tracking.md](tracking.md).
+
+## Such-Architektur – implementiert (Phase 7)
+
+Filter, Sortierung und Pagination ausschließlich serverseitig über GET-Parameter auf `{prefix}psl_properties` (keine API, kein JavaScript nötig). `ListingRequest` whitelistet und normalisiert die URL, `PropertySearchCriteria` erzwingt Wertebereiche, `SearchQueryBuilder` erzeugt nur Platzhalter-SQL mit fester Sortier-Whitelist und stabilem Tie-Breaker `propstack_id`. Gesamtzahl per `COUNT(*)`, Seite per `LIMIT/OFFSET`; Filteroptionen per einer `GROUP BY`-Abfrage über Spalten. Preisbasis ist die Spalte `search_price` (Schema v2). SEO der Übersicht (Self-Canonical, noindex für Filter) über `SeoService::forListing()` und die bestehenden Adapter; Head und Shortcode teilen sich die Abfrage über `ListingService`. Details: [listing.md](listing.md).
 
 ## Theme-Integration
 

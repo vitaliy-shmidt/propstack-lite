@@ -42,6 +42,22 @@ final class UrlGenerator {
 		return $this->detailUrlFor( $stored->id, $stored->slug );
 	}
 
+	/**
+	 * URL einer Listen-/Suchansicht: Basis-URL der Seite (ohne Query) plus validierte, normalisierte
+	 * Parameter aus ListingRequest::queryArgs() in fester Reihenfolge. Tracking- und unbekannte
+	 * Parameter sind dort nie enthalten. Die Seiten-URL ist der Permalink (ohne Pretty Permalinks
+	 * z. B. `?page_id=4` – diese Query bleibt erhalten).
+	 *
+	 * @param array<string, string> $args
+	 */
+	public function listingUrl( string $pageUrl, array $args ): string {
+		$base = explode( '#', $pageUrl, 2 )[0];
+		if ( [] === $args ) {
+			return $base;
+		}
+		return $base . ( str_contains( $base, '?' ) ? '&' : '?' ) . http_build_query( $args, '', '&', PHP_QUERY_RFC3986 );
+	}
+
 	/** Ziel einer Legacy-URL (/immobilie/…, ?ps_id=) – immer die aktuelle kanonische URL. */
 	public function legacyTarget( StoredProperty $stored ): string {
 		return $this->canonicalUrl( $stored );

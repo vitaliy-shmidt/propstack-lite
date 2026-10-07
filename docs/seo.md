@@ -1,5 +1,7 @@
 # SEO für Immobilien-Detailseiten
 
+> **Immobilienübersicht (Phase 7):** Canonical, Robots und Seitenzusatz der Seite mit `[propstack_list]` (Pagination, Filter, Sortierung) – berechnet in `SeoService::forListing()`, ausgegeben über dieselben Adapter – beschreibt [listing.md](listing.md#seo-verhalten).
+
 Stand: Phase 5 (2026-10-06), **implementiert**; RC-Abnahme 2026-10-06 (0.4.1) mit voll konfiguriertem Yoast und Rank Math. Getestet in einer Wegwerf-Instanz (WordPress 7.1.2 unter `/Picaflor/`) mit **Yoast SEO 28.6** und **Rank Math 1.0.279** – jeweils einzeln, gemeinsam und ohne SEO-Plugin. Nicht gegen die Live-Site (Avada) verifiziert.
 
 Grundsatz: Alle SEO-Werte entstehen **an einer Stelle** (`Seo\SeoService`) aus dem lokalen Store. Ausgegeben werden sie je nach Umgebung von genau einem Adapter. Kein Besucher-Request – auch kein Sitemap-Abruf – löst einen Propstack-Request aus.

@@ -175,6 +175,31 @@ final class FieldCatalog {
 	];
 
 	/**
+	 * Objektart-Gruppen der Immobiliensuche (Phase 7): URL-Wert => [deutsche Bezeichnung, rs_type-Werte].
+	 * Nur diese Gruppen sind filterbar; seltene/technische rs_type-Werte (Ferienwohnung, WG-Zimmer …)
+	 * erscheinen in der ungefilterten Liste, aber nicht als eigene Filteroption. Die Reihenfolge ist
+	 * die Reihenfolge im Formular. Doku: docs/listing.md.
+	 */
+	public const TYPE_GROUPS = [
+		'apartment'  => [ 'Wohnung', [ 'APARTMENT' ] ],
+		'house'      => [ 'Haus', [ 'HOUSE' ] ],
+		'plot'       => [ 'Grundstück', [ 'TRADE_SITE' ] ],
+		'commercial' => [ 'Gewerbe', [ 'OFFICE', 'STORE', 'GASTRONOMY', 'INDUSTRY', 'SPECIAL_PURPOSE' ] ],
+		'investment' => [ 'Anlageobjekt', [ 'INVESTMENT' ] ],
+		'parking'    => [ 'Stellplatz/Garage', [ 'GARAGE' ] ],
+	];
+
+	/** Gruppe (URL-Wert) eines rs_type oder null, wenn die Objektart keiner Filtergruppe angehört. */
+	public static function typeGroupOf( ?string $rsType ): ?string {
+		foreach ( self::TYPE_GROUPS as $key => [ , $types ] ) {
+			if ( in_array( $rsType, $types, true ) ) {
+				return $key;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Bekannte interne CRM-Felder, die niemals gespeichert oder ausgegeben werden dürfen.
 	 * Wird von Tests und `wp psl audit` verwendet (Positivliste bleibt maßgeblich).
 	 */

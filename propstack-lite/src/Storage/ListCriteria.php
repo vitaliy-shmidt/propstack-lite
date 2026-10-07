@@ -3,7 +3,9 @@
 namespace PropstackLite\Storage;
 
 /**
- * Filter-/Sortierkriterien für öffentliche Listen.
+ * Filter-/Sortierkriterien für öffentliche Listen im Format vor Phase 7 (Shortcode-Attribute
+ * `sort_by`/`order`, `rs_type`, `price_from`/`price_to`). Wird für die Abfrage in
+ * PropertySearchCriteria übersetzt (toSearchCriteria) – es gibt nur noch einen SQL-Weg.
  *
  * Kriterien können die Ergebnismenge nur einschränken – die Sichtbarkeit (öffentliche Status)
  * wird unabhängig davon im PropertyStore erzwungen.
@@ -27,6 +29,34 @@ final class ListCriteria {
 		public readonly int $page = 1,
 		public readonly array $excludeIds = []
 	) {}
+
+	/**
+	 * Übersetzung in die Phase-7-Kriterien. Preisfilter gelten seither für `search_price`
+	 * (Kaufpreis bzw. Kaltmiete; „Preis auf Anfrage“ fällt bei aktivem Preisfilter heraus).
+	 */
+	public function toSearchCriteria(): PropertySearchCriteria {
+		$asc  = 'asc' === $this->order;
+		$sort = match ( $this->sortBy ) {
+			'price'        => $asc ? 'price_asc' : 'price_desc',
+			'living_space' => $asc ? 'area_asc' : 'area_desc',
+			'rooms'        => $asc ? 'rooms_asc' : 'rooms_desc',
+			'city'         => 'city_asc',
+			'updated_at'   => 'updated',
+			default        => $asc ? 'oldest' : 'newest',
+		};
+		return new PropertySearchCriteria(
+			marketingType: $this->marketingType,
+			rsTypes: null === $this->rsType ? [] : [ $this->rsType ],
+			city: $this->city,
+			zipCode: $this->zipCode,
+			priceMin: $this->priceFrom,
+			priceMax: $this->priceTo,
+			sort: $sort,
+			page: $this->page,
+			perPage: $this->perPage,
+			excludeIds: $this->excludeIds
+		);
+	}
 
 	/** Erzeugt Kriterien aus ungeprüften Eingaben (z. B. Shortcode-Attributen). */
 	public static function fromInput( array $in ): self {

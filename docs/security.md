@@ -74,6 +74,18 @@ Verbindlich für alle Phasen. „Umgesetzt“ = im Code vorhanden und getestet (
 - Event-Daten nur aus der serverseitigen CF7-Antwort nach `mail_sent`; gefälschte DOM-Events ohne `psl_lead` werden ignoriert – **getestet**.
 - Plugin lädt kein GTM/GA4/Ads/Pixel und erzeugt keine externen Requests – **getestet**.
 
+## Immobiliensuche (Phase 7, umgesetzt)
+
+Details: [listing.md](listing.md#security).
+
+- GET-Parameter der Übersicht nur aus zentraler Whitelist (`ListingRequest::PARAMS`), jeder Wert gegen Whitelist bzw. festes Muster geprüft; ungültige Werte (Arrays wie `seite[]=1`, negative/riesige Zahlen, SQL-/HTML-Fragmente, unbekannte Parameter) werden ignoriert, ohne Warning – **getestet** (Unit, Integration, HTTP inkl. `debug.log`).
+- Keine Spalte und keine Sortierrichtung aus der URL: `ORDER BY` nur aus `PropertySearchCriteria::SORTS`, Werte nur als `$wpdb->prepare`-Platzhalter (Unit-Test: kein Wert im SQL-Text) – **getestet**.
+- Sichtbarkeit (aktiv + öffentlicher Status) in jeder Such-, Count- und Optionsabfrage; weder Shortcode-Attribute noch URL-Parameter (`status`, `state` …) schalten frei – **getestet**.
+- XSS über GET-Werte (`city`, `price_max`, `rooms_min` …) nicht ausführbar; das Formular zeigt nur validierte Werte, escaped – **getestet (Integration, HTTP)**.
+- „Preis auf Anfrage“: `search_price = NULL` → ein intern hinterlegter Preis ist über Preisfilter nicht erratbar – **getestet**.
+- Karten: bei `hide_address` nur PLZ/Ort/Stadtteil; nur öffentliche HTTPS-Bilder, neutraler Platzhalter ohne externen Dienst – **getestet**.
+- Keine Speicherung/Protokollierung von Suchanfragen, keine Cookies.
+
 ## Logging
 
 Nur bei `WP_DEBUG_LOG`; Inhalte: Sync-Zusammenfassungen, Fehlerkategorien, Objekt-IDs. Keine Keys, Tokens, Namen, E-Mails, Telefonnummern, Adressen, Nachrichten.

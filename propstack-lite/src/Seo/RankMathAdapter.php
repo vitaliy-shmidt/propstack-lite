@@ -11,6 +11,7 @@ namespace PropstackLite\Seo;
  * - `opengraph/{facebook|twitter}/add_images` (Action), `opengraph/twitter/card_type`,
  *   `opengraph/twitter/twitter_title|twitter_description`
  * - `json_ld`: RealEstateListing, Place/Apartment/House, RealEstateAgent, ggf. BreadcrumbList
+ * - Immobilienübersicht (Phase 7): nur `frontend/canonical`, `frontend/robots`, `frontend/title` (Seitenzusatz)
  * - `frontend/breadcrumb/items`: Pfad Startseite → Immobilien → Ort → Objekt (sonst nur „Home“)
  */
 final class RankMathAdapter {
@@ -63,7 +64,11 @@ final class RankMathAdapter {
 
 	public function title( mixed $title ): mixed {
 		$data = $this->context->data();
-		return null === $data ? $title : $data->title;
+		if ( null === $data ) {
+			$listing = $this->context->listing();
+			return null !== $listing && is_string( $title ) ? $listing->title( $title ) : $title;
+		}
+		return $data->title;
 	}
 
 	public function description( mixed $description ): mixed {
@@ -73,7 +78,7 @@ final class RankMathAdapter {
 
 	/** Rank-Math-Format: [ 'index' => 'index', 'follow' => 'follow', … ]. */
 	public function robots( mixed $robots ): mixed {
-		$data = $this->context->data();
+		$data = $this->context->data() ?? $this->listingNoindex();
 		if ( null === $data ) {
 			return $robots;
 		}
@@ -87,7 +92,10 @@ final class RankMathAdapter {
 	/** 410: leer → Rank Math gibt keinen Canonical aus. */
 	public function canonical( mixed $canonical ): mixed {
 		$data = $this->context->data();
-		return null === $data ? $canonical : (string) $data->canonical;
+		if ( null === $data ) {
+			return $this->context->listing()?->canonical ?? $canonical; // Übersicht: selbstreferenzierend
+		}
+		return (string) $data->canonical;
 	}
 
 	public function ogTitle( mixed $value ): mixed {
@@ -171,5 +179,14 @@ final class RankMathAdapter {
 			$entities[ 'psl' . $node['@type'] ] = $node;
 		}
 		return $entities;
+	}
+
+	/**
+	 * Übersicht: nur herabstufen (noindex bei Filtern/Sortierung/ungültiger Seite), nie eine
+	 * redaktionelle noindex-Einstellung der Seite oder „Suchmaschinen abhalten“ auf index heben.
+	 */
+	private function listingNoindex(): ?ListingSeoData {
+		$listing = $this->context->listing();
+		return null !== $listing && ! $listing->isIndexable() ? $listing : null;
 	}
 }

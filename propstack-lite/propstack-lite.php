@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Propstack Listings Lite
  * Description:       Propstack-Immobilien in WordPress: Synchronisation in einen lokalen Bestand und Ausgabe per Shortcode.
- * Version:           0.5.0
+ * Version:           0.6.0
  * Requires at least: 6.0
  * Requires PHP:      8.1
  * Author:            Vitaliy
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'PSL_VERSION', '0.5.0' );
+define( 'PSL_VERSION', '0.6.0' );
 define( 'PSL_FILE', __FILE__ );
 define( 'PSL_DIR', plugin_dir_path( __FILE__ ) );
 define( 'PSL_URL', plugin_dir_url( __FILE__ ) );

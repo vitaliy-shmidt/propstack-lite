@@ -169,8 +169,9 @@ final class SettingsPage {
 			<?php $this->renderSeoBox(); ?>
 
 			<h2>Shortcode</h2>
-			<p><code>[propstack_list per="12" marketing_type="BUY" rs_type="APARTMENT" sort_by="price" order="asc"]</code></p>
-			<p class="description">Attribute: per, page, marketing_type (BUY/RENT), rs_type, city, zip_code, price_from, price_to, sort_by (created_at, updated_at, price, living_space, rooms, city), order (asc/desc), heading (h2–h4). Attribute können die Liste nur einschränken, nie nicht-öffentliche Objekte freischalten.</p>
+			<p><code>[propstack_list]</code> – Immobiliensuche mit Filtern, Sortierung und Seitennavigation (Standard: 12 pro Seite).</p>
+			<p><code>[propstack_list per="3" marketing_type="RENT" show_filters="0" show_sort="0" pagination="0"]</code> – statische Liste, z. B. als Teaser.</p>
+			<p class="description">Attribute: per (1–100), heading (h2–h4), show_filters, show_sort, pagination (1/0), sort (newest, updated, price_asc, price_desc, area_asc, area_desc, rooms_asc, rooms_desc, city_asc); feste Einschränkungen: marketing_type (BUY/RENT), property_type (apartment, house, plot, commercial, investment, parking) bzw. rs_type, city, zip_code, price_from, price_to. Weiterhin unterstützt: page, sort_by/order, limit. Attribute und URL-Parameter können die Liste nur einschränken, nie nicht-öffentliche Objekte freischalten.</p>
 		</div>
 		<?php
 	}
