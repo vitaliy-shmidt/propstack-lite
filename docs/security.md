@@ -86,9 +86,24 @@ Details: [listing.md](listing.md#security).
 - Karten: bei `hide_address` nur PLZ/Ort/Stadtteil; nur öffentliche HTTPS-Bilder, neutraler Platzhalter ohne externen Dienst – **getestet**.
 - Keine Speicherung/Protokollierung von Suchanfragen, keine Cookies.
 
+## Final Review (Phase 8, 2026-10-08)
+
+Code-Durchsicht aller Eingabepfade und erneute Ausführung der Sicherheitstests – **keine neuen Befunde**:
+- **XSS:** alle Template-Ausgaben escaped; GET-Werte nur validiert; JSON-LD mit `JSON_HEX_*` (HTTP-Tests in 4 SEO-Modi, auch gegen das Release-ZIP).
+- **SQL-Injection:** Werte nur über `$wpdb->prepare`, dynamische Teile nur Spalten-Whitelist bzw. feste Bezeichner (`Schema::dropIndex` filtert auf `[a-z_]`).
+- **CSRF/Nonces/Capabilities:** Einstellungen über Settings API (`options.php`-Nonce), `admin-post`-Aktionen mit `check_admin_referer` + `manage_options`; Hinweise/Diagnose nur für `manage_options`.
+- **REST/Webhook:** Token mit `hash_equals`, leer = deaktiviert, nur POST, plant nur einen Cron-Lauf.
+- **SSRF:** feste API-Basis-URL, Pfadsegmente nur Integer-IDs.
+- **Header-Injection:** Mail-Header nur aus validierten Einstellungen.
+- **Path Traversal:** Template-Namen nur aus Code, `..` entfernt; keine Dateipfade aus Requests.
+- **Secrets:** Key nur serverseitig; Build prüft, dass der Key aus `Propstack-API.txt` in keiner Paketdatei steht; Diagnose zeigt nur „ja/nein“.
+- **Privacy:** `wp psl audit` auf 442 synthetischen Objekten mit Ködern (private Bilder, interne Notiz, interne Makler-E-Mail, verborgene Adressen mit Koordinaten) ohne Verstoß; HTML/JSON-LD/Meta ohne Köder (HTTP-Smoke WP 6.4); Logger verwirft PII/Klick-IDs/URL-Queries (Unit-Test).
+- **Statische Analyse:** PHPStan Level 5 ohne Befund (ein Fund behoben: Zuweisung an nicht existierende `WP_Query::$is_front_page`, harmlos).
+- **Alte Laufzeit:** kein Fatal Error unter PHP 7.4 (echter Test) bzw. WordPress 6.3.
+
 ## Logging
 
-Nur bei `WP_DEBUG_LOG`; Inhalte: Sync-Zusammenfassungen, Fehlerkategorien, Objekt-IDs. Keine Keys, Tokens, Namen, E-Mails, Telefonnummern, Adressen, Nachrichten.
+Seit 0.9.0: ERROR/WARNING immer (Server-Log bzw. `debug.log`), INFO nur bei `WP_DEBUG`; Inhalte: Sync-Zusammenfassungen mit Fehlercode, Objekt-IDs, Lead-ID/Status. Keine Keys, Tokens, Namen, E-Mails, Telefonnummern, Adressen, Nachrichten, IP, Klick-IDs, URL-Queries ([operations.md](operations.md#logging)).
 
 ## Entwicklungsumgebung
 

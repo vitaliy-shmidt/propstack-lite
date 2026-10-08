@@ -40,6 +40,39 @@ final class Schema {
 	}
 
 	/**
+	 * Wurde die Tabelle von einer NEUEREN Plugin-Version migriert (Downgrade)? Dann wird nicht migriert
+	 * und nicht synchronisiert – Lesen bleibt möglich. Siehe docs/database.md („Downgrade“).
+	 */
+	public static function isNewerThanCode(): bool {
+		return (int) get_option( self::VERSION_OPTION, 0 ) > self::VERSION;
+	}
+
+	/** Spalten, ohne die Lesen/Schreiben nicht funktioniert (Diagnose). */
+	public const REQUIRED_COLUMNS = [ 'propstack_id', 'slug', 'state', 'status_id', 'marketing_type', 'rs_type', 'city', 'search_price', 'living_space', 'rooms', 'data', 'content_changed_at' ];
+
+	/**
+	 * Zustand für Diagnose/Site Health (nicht im Besucher-Request verwenden: SHOW-Abfragen).
+	 *
+	 * @return array{installed: int, expected: int, table: bool, missingColumns: list<string>}
+	 */
+	public static function status(): array {
+		global $wpdb;
+		$table   = self::table();
+		$exists  = $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+		$missing = [];
+		if ( $exists ) {
+			$columns = array_map( 'strtolower', (array) $wpdb->get_col( "SHOW COLUMNS FROM {$table}" ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$missing = array_values( array_diff( self::REQUIRED_COLUMNS, $columns ) );
+		}
+		return [
+			'installed'      => (int) get_option( self::VERSION_OPTION, 0 ),
+			'expected'       => self::VERSION,
+			'table'          => $exists,
+			'missingColumns' => $missing,
+		];
+	}
+
+	/**
 	 * Migration 1 → 2: `search_price` für alle Zeilen mit Daten aus dem gespeicherten Modell berechnen
 	 * (dieselbe Regel wie beim Sync: Property::searchPrice()). Läuft einmalig in Batches.
 	 */

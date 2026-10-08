@@ -343,6 +343,12 @@
 }
 
 @media (max-width: 599px) {
+	/* Trefferzahl und Seitenangabe fest untereinander: ein vom Webfont abhängiger Umbruch würde das Raster
+	   nach dem Laden der Theme-Schrift verschieben (gemessen CLS 0,10 mit Twenty Twenty-Four). */
+	.psl-list .psl-results {
+		flex-direction: column;
+	}
+
 	.psl-list .psl-search__sort .psl-field {
 		max-width: none;
 	}

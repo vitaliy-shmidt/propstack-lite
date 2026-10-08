@@ -4,8 +4,8 @@
  * Ohne JavaScript funktioniert alles über das normale GET-Formular. Dieses Skript:
  * 1. schickt leere bzw. Standardwerte nicht mit → kurze, teilbare URLs („?city=Berlin“ statt
  *    „?marketing_type=&property_type=&city=Berlin&…“). Der Server ignoriert solche Werte ohnehin.
- * 2. klappt das Filterpanel (<details>) auf kleinen Bildschirmen ohne aktive Filter ein.
- *    Ohne JS ist es immer geöffnet; das native <summary> bleibt der zugängliche Umschalter.
+ * (Das mobile Einklappen des Filterpanels erledigt ein Inline-Skript im Template vor dem ersten Rendern –
+ *  hier per defer wäre es ein Layout-Sprung, gemessen CLS 0,28.)
  * Kein Auto-Submit bei Auswahländerung (WCAG 3.2.2), keine Requests, keine Speicherung.
  */
 (function (root) {
@@ -44,11 +44,6 @@
 				}
 			}, 0);
 		});
-
-		var panel = form.querySelector('[data-psl-filter-panel]');
-		if (panel && root.matchMedia && root.matchMedia('(max-width: 767px)').matches && panel.getAttribute('data-active') === '0') {
-			panel.open = false;
-		}
 	}
 
 	var forms = doc.querySelectorAll('form[data-psl-search]');

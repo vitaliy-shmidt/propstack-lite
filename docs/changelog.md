@@ -1,5 +1,38 @@
 # Changelog (Entwicklungsfortschritt)
 
+## 2026-10-08 – Phase 8: Production Hardening, Release Candidate (Version 0.9.0)
+
+Release-Notes und Rollout: [release-1.0.md](release-1.0.md). Betrieb: [operations.md](operations.md). **0.9.0 ist der Release Candidate; 1.0.0 erst nach Staging-Abnahme und Freigabe.**
+
+**Wichtigste Änderungen**
+- **Voraussetzungs-Guard** im Bootstrap (PHP-7-kompatible Syntax): PHP ≥ 8.1, WordPress ≥ 6.4 (`PSL_MIN_PHP`, `PSL_MIN_WP`, Header „Requires at least“ von 6.0 auf **6.4** angehoben – 6.0 war nie getestet); auf älteren Systemen keine Klassen aus `src/`, Aktivierung mit Meldung abgebrochen, Admin-Hinweis, leerer Shortcode – kein Fatal Error. Header „Tested up to: 7.1“.
+- **Fehlercodes** (`Support\ErrorCode`), Sync-Ergebnisse mit Code (`last_error_code`), Sync überspringt bei fehlendem Key (`api_key_missing`), fehlenden öffentlichen Status oder neuerer Schema-Version (`schema_newer`, Downgrade-Schutz) ohne API-Request.
+- **Diagnose:** `Admin\Diagnostics` (eine Bewertung für alles), **Site Health** (5 Tests + Debug-Info), Diagnose-Box auf der Einstellungsseite, **`wp psl doctor`** (Exit-Code 1 bei kritischen Problemen, `--format=json`), `wp psl status` mit Version/Schema/Lock/Code.
+- **Admin-Hinweise** nur noch auf Plugins-Seite (kritisch/fehlschlagender Sync) und Einstellungsseite; nicht mehr auf dem Dashboard; CF7-Hinweis nur, wenn Anfragen konfiguriert sind.
+- **Cron:** Lock-Verlängerung bei langen Läufen (`SyncLock::refresh`), Anzeige „läuft seit/letzter Fortschritt“, nächster Voll-Sync; System-Cron dokumentiert.
+- **Logging:** ERROR/WARNING immer, INFO nur mit `WP_DEBUG`, Codes im Kontext, erweiterte PII-Sperre (IP, Klick-IDs, UTM, URL-Queries, E-Mails in Texten), Filter `psl_log_enabled`.
+- **Schema:** `Schema::status()`/`isNewerThanCode()`; Aktivierung und Update laufen denselben Migrationsweg (vorher setzte eine Reaktivierung v2 ohne `search_price`-Backfill).
+- **Release-Build** `composer build` (`bin/build-release.php`): Versions-/Mindestversions-/Changelog-Prüfung, Datei-Whitelist, Syntax-, Pfad-, Secret- und Dev-Datei-Prüfung, Abbruch bei Composer-Laufzeitabhängigkeiten, reproduzierbares ZIP + SHA256 + Dateiliste. **`vendor/` wird nicht ausgeliefert** (keine Laufzeitpakete; `composer install --no-dev` installiert nichts).
+- **CI** (`.github/workflows/ci.yml`): PHP 8.1/8.2/8.3 Syntax + Unit, PHPStan, Guard unter PHP 7.4, Build-Reproduzierbarkeit, JS.
+- **PHPStan** Level 5 (Dev-Abhängigkeit, `composer analyse`), 0 Befunde.
+- Tests: `tests/bootstrap.php` lädt Plugin-Klassen bei WordPress-Tests aus der **installierten** Kopie (Release-ZIP als Testobjekt); `tests/compat/requirements-guard.php`.
+
+**Bugs behoben**
+- **Liste mobil CLS 0,28** (Lighthouse): Einklappen des Filterpanels per `defer`-Skript nach dem ersten Rendern → jetzt Inline-Skript direkt nach dem Panel (CLS 0).
+- **CLS 0,10 mit Twenty Twenty-Four (390 px):** Umbruch der Zeile „Trefferanzahl / Seite x von y“ wechselte nach dem Laden der Theme-Webfont → auf schmalen Viewports fest untereinander.
+- `WP_Query::$is_front_page` wurde als dynamische Eigenschaft gesetzt (PHPStan; wirkungslos) → entfernt.
+- Reaktivierung eines aktualisierten Plugins setzte Schema 2 ohne Backfill (s. o.).
+- **Page-Cache beim ersten Speichern der Einstellungen nicht geleert** (Neuinstallation: `add_option` statt `update_option`) – gefunden durch den Integrationstest gegen die frische ZIP-Installation; jetzt beide Hooks.
+- Tests: `SeoConflictTest` nutzte die alte `Notices`-Signatur; Title-, Cookie-Pfad- und Yoast-Sitemap-Erwartungen hingen von der Testinstanz ab (Seitenname, `/Picaflor/`, Yoast-Zustand) – jetzt installationsunabhängig; Integrationstests setzen ohne `PSL_API_KEY` einen Dummy-Key.
+
+**DB-Migration:** keine neue Schema-Version (bleibt 2); Index-/Backfill-Logik vereinheitlicht.
+
+**Breaking Changes:** keine API-Brüche. Verhaltensänderungen: Mindestversion WordPress 6.4; Sync ohne API-Key wird übersprungen (`api_key_missing`) statt als API-Fehler zu enden; INFO-Logs nur noch mit `WP_DEBUG`; Admin-Hinweise nicht mehr auf dem Dashboard.
+
+**Release-Artefakt:** `propstack-lite-0.9.0.zip`, 185.646 Byte, SHA256 `7370ca1863312473507df9a43971bd132247ad8a4a31e8523e5f0f4f5d4b236f` (reproduzierbar).
+
+**Offene Punkte vor 1.0:** siehe Abschlussbericht/[release-1.0.md](release-1.0.md#bekannte-einschränkungen) – Staging (Avada, SEO-Plugin, Cache/Hosting, Apache/nginx, Mobilgerät), Consent-Tool, Propstack-E2E (BLOCKED), CI-Lauf auf GitHub nicht eingesehen (kein `gh`-Zugang).
+
 ## 2026-10-07 – Phase 7: Immobiliensuche, Filter, Pagination, Sortierung (Version 0.6.0)
 
 Dokumentation: [listing.md](listing.md).

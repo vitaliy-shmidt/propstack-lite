@@ -232,7 +232,8 @@ final class TrackingHttpTest extends IntegrationTestCase {
 		$home = $this->http( $this->base . '/' )['body'];
 		$this->assertStringContainsString( 'psl-tracking.js', $home, 'Attribution seitenweit (Landingpages)' );
 		$this->assertStringNotContainsString( 'psl-lead-event.js', $home );
-		$this->assertStringContainsString( 'window.pslTrackingConfig = {"cookie":"psl_attr","ttlDays":90,"path":"\/Picaflor\/","secure":false,"attribution":true,"consent":{"type":"api"}};', $home );
+		$path = str_replace( '/', '\/', (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) ); // Cookie-Pfad = Installationspfad
+		$this->assertStringContainsString( 'window.pslTrackingConfig = {"cookie":"psl_attr","ttlDays":90,"path":"' . $path . '","secure":false,"attribution":true,"consent":{"type":"api"}};', $home );
 		$this->assertMatchesRegularExpression( '#<script[^>]*\bdefer\b[^>]*psl-tracking\.js#', $home, 'defer' );
 
 		$detail = $this->http( $this->url( self::ID_ACTIVE ) )['body'];

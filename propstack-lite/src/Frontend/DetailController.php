@@ -84,11 +84,11 @@ final class DetailController {
 		if ( ! $query->is_main_query() || ! $this->isRoute( $query ) ) {
 			return;
 		}
-		$query->is_home       = false;
-		$query->is_front_page = false;
-		$query->is_archive    = false;
-		$query->is_page       = false;
-		$query->is_singular   = false;
+		// is_front_page() ist eine Methode und ergibt sich aus is_home/is_page – kein eigenes Flag setzen.
+		$query->is_home     = false;
+		$query->is_archive  = false;
+		$query->is_page     = false;
+		$query->is_singular = false;
 	}
 
 	public function skipMainQuery( mixed $posts, \WP_Query $query ): mixed {

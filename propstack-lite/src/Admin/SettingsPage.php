@@ -167,6 +167,7 @@ final class SettingsPage {
 			<?php $this->renderLeadStatus(); ?>
 			<?php $this->renderSyncBox(); ?>
 			<?php $this->renderSeoBox(); ?>
+			<?php $this->renderDiagnostics(); ?>
 
 			<h2>Shortcode</h2>
 			<p><code>[propstack_list]</code> – Immobiliensuche mit Filtern, Sortierung und Seitennavigation (Standard: 12 pro Seite).</p>
@@ -336,7 +337,7 @@ final class SettingsPage {
 						<legend class="screen-reader-text">Propstack-Custom-Fields</legend>
 						<?php foreach ( Settings::ATTRIBUTION_KEYS as $key ) : ?>
 							<label style="display:block;margin-bottom:4px">
-								<span style="display:inline-block;min-width:330px"><?php echo esc_html( $labels[ $key ] ?? $key ); ?> → <code>client_cf_</code></span>
+								<span style="display:inline-block;min-width:330px"><?php echo esc_html( $labels[ $key ] ); ?> → <code>client_cf_</code></span>
 								<input type="text" class="code" name="<?php echo esc_attr( $name ); ?>[cf_map][<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $cfMap[ $key ] ?? '' ); ?>" placeholder="leer = nicht senden">
 							</label>
 						<?php endforeach; ?>
@@ -403,7 +404,9 @@ final class SettingsPage {
 				<tr><th>Letzter Voll-Sync</th><td><?php echo esc_html( $fmt( $state['last_full_at'] ?? null ) ); ?></td></tr>
 				<tr><th>Letzter inkrementeller Sync</th><td><?php echo esc_html( $fmt( $state['last_incremental_at'] ?? null ) ); ?></td></tr>
 				<tr><th>Letzter Fehler</th><td><?php echo esc_html( isset( $state['last_error'] ) ? $fmt( $state['last_error_at'] ?? null ) . ' – ' . $state['last_error'] : '–' ); ?></td></tr>
-				<tr><th>Nächster geplanter Sync</th><td><?php echo esc_html( ( $next = wp_next_scheduled( 'psl_sync_incremental' ) ) ? wp_date( 'd.m.Y H:i:s', $next ) : 'nicht geplant' ); ?></td></tr>
+				<tr><th>Letzter Fehlercode</th><td><?php echo esc_html( ( new SyncState() )->lastErrorCode() ?: '–' ); ?></td></tr>
+				<tr><th>Nächster inkrementeller Sync</th><td><?php echo esc_html( ( $next = wp_next_scheduled( 'psl_sync_incremental' ) ) ? wp_date( 'd.m.Y H:i:s', $next ) : 'nicht geplant' ); ?></td></tr>
+				<tr><th>Nächster Voll-Sync</th><td><?php echo esc_html( ( $nextFull = wp_next_scheduled( 'psl_sync_full' ) ) ? wp_date( 'd.m.Y H:i:s', $nextFull ) : 'nicht geplant' ); ?></td></tr>
 				<tr><th>Sync läuft gerade</th><td><?php echo esc_html( ( new SyncLock() )->isLocked() ? 'ja' : 'nein' ); ?></td></tr>
 			</tbody>
 		</table>
@@ -420,6 +423,22 @@ final class SettingsPage {
 			</form>
 		</p>
 		<p class="description">Diagnose per WP-CLI: <code>wp psl status</code>, <code>wp psl sync --full</code>, <code>wp psl audit</code>.</p>
+		<?php
+	}
+
+	/** Diagnose (Phase 8): Versionen, Umgebung, Integrationen – dieselben Daten wie Site Health und `wp psl doctor`. */
+	private function renderDiagnostics(): void {
+		$facts = ( new Diagnostics( $this->settings ) )->facts();
+		?>
+		<h2 id="psl-diagnose">Diagnose</h2>
+		<table class="widefat striped" style="max-width:720px">
+			<tbody>
+				<?php foreach ( Diagnostics::summary( $facts ) as $label => $value ) : ?>
+					<tr><th><?php echo esc_html( $label ); ?></th><td><?php echo esc_html( $value ); ?></td></tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<p class="description">Prüfungen und Empfehlungen: <a href="<?php echo esc_url( admin_url( 'site-health.php' ) ); ?>">Werkzeuge → Website-Zustand</a> bzw. <code>wp psl doctor</code>. Keine Secrets in dieser Übersicht.</p>
 		<?php
 	}
 

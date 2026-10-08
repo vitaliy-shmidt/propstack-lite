@@ -93,5 +93,6 @@ Canonical der Übersicht ist selbstreferenzierend auf die normalisierte URL (nur
 
 - Unterseiten der WordPress-Seite `/immobilien/`, deren Slug auf `-{Zahl}` endet, werden vom Router überdeckt.
 - Permalink-Strukturen mit `/index.php/`-Präfix (PATHINFO) sind nicht getestet.
+- Webserver: getestet nur mit dem PHP-Built-in-Server (Router-Skript simuliert Rewrites), auch als Unterverzeichnis-Installation; das Plugin nutzt ausschließlich WordPress-Rewrite-Regeln. Apache (`.htaccess`) und nginx der Live-Site: **nicht getestet** (Phase 8).
 - Ähnliche Immobilien, Galerie, Ausstattung, Energie, Grundrisse: Phase 3. Kontaktformular: Phase 4.
 - Avada und ein Page-Cache-Plugin sind nicht gegen reale Installationen getestet; Yoast 28.6 und Rank Math 1.0.279 nur in der Testinstanz.

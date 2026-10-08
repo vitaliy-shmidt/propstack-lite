@@ -68,6 +68,38 @@ In der Testinstanz installiert (standardmäßig inaktiv): Yoast SEO 28.6, Rank M
 - Sync: nur öffentliche Objekte gespeichert; verkauft → 30 Tage → Daten entfernt; Statuswechsel/Löschung → removed; Reaktivierung; API-Fehler lässt Bestand unverändert; ohne öffentliche Status kein Request; Inkrement speichert nie Nicht-Öffentliches; Lock; Reconcile-Fallback
 - Store/Shortcode: Status-Whitelist erzwungen, `status`-Attribut wirkungslos, Escaping, Filter/Sortierung/Paging, SQL-Injection-Versuche in Kriterien wirkungslos, **0 Propstack-Requests beim Rendern**
 
+## Ergebnisse Phase 8 (2026-10-08, 0.9.0 – Release Candidate)
+
+Testobjekt ist das **Release-ZIP** (`propstack-lite-0.9.0.zip`, SHA256 `7370ca18…236f`): `tests/bootstrap.php` lädt bei WordPress-Tests die Plugin-Klassen aus der installierten Kopie, nicht aus dem Repository.
+
+| Suite | Ergebnis |
+|---|---|
+| JavaScript | 20/20 grün |
+| Unit | 220 Tests, 1051 Assertions – grün unter PHP **8.1.31, 8.2.12, 8.3.2** (neu `OperationsTest`: Diagnose-Bewertung, Codes, Logger ohne PII, Versionskonsistenz, keine Composer-Laufzeitpakete) |
+| PHPStan Level 5 | 0 Fehler |
+| Guard (`tests/compat/requirements-guard.php`) | bestanden unter echtem **PHP 7.4.33** und mit simuliertem WordPress 6.3 |
+| Integration (Repo, Entwicklungsinstanz) | 44 Tests, 248 Assertions – grün unter PHP 8.3 und 8.1 |
+| Integration (Release-ZIP, frische Instanz) | 44 Tests, 247 Assertions – grün |
+| HTTP Release-ZIP (PHP 8.3) | Core 83/999 (23 übersprungen), Yoast 83/995 (24), Konflikt 83/869 (27), Rank Math 83/1006 (22) – grün |
+| HTTP Repo (Entwicklungsinstanz, Webserver **PHP 8.1**) | Core 83/999, Yoast 83/994, Konflikt 83/869, Rank Math 83/1006 – grün |
+| Upgrade per Release-ZIP | 0.2.0, 0.3.0, 0.4.0, 0.4.1, 0.5.0, 0.6.0 → 0.9.0 mit je 442 synthetischen Objekten: Einstellungen, API-Key, Status, CF7-Mapping, Tracking, Webhook-Token erhalten; Schema 2; `search_price` 0 Abweichungen; eine Tabelle; Cron je Event einmal; keine Dev-Dateien älterer Pakete (115 Dateien) – **OK** |
+| Rollback 0.9.0 → 0.6.0 → 0.9.0 | ohne DB-Restore funktionsfähig |
+| ZIP-Installation | frisch: Dateien = Manifest, Aktivierung (Schema 2, Rewrite-Regeln, Cron je einmal), Konfiguration, Sync per `wp cron event run --due-now`, `wp psl audit` 0 Verstöße |
+| Lebenszyklus | Aktivierung → Deaktivierung (Cron/Rewrite weg, Daten bleiben) → Reaktivierung (12 Karten, Sync) → Deinstallation (Tabelle, Optionen, Transients, Cron weg) |
+| PHP 7.4 (echt, WP 7.1.2) | Aktivierung von WordPress verweigert („erfordert PHP 8.1“); bereits aktiv → kein Fatal, keine Klasse geladen, Shortcode leer |
+| WordPress 6.3.5 | Upload abgelehnt („erfordert jedoch 6.4“), FTP-Kopie: Aktivierung abgelehnt |
+| WordPress 6.4.5 (PHP 8.1) | Installation aus ZIP, Sync 442 Objekte, Liste/Filter (noindex + Header)/Detail (Canonical, Schema, keine Köderdaten)/Sitemap (442 URLs)/301/404, 0 Warnings; Browser-Regression (Twenty Twenty-Four) |
+| Browser (Edge headless) | Liste 390–1366 px ohne Überlauf, 4:3, Labels, eindeutige IDs, CLS 0, JS-Submit ohne leere Parameter, Pagination/Zurück, ohne JS funktionsfähig, mobiles Panel per Tastatur |
+| Lighthouse (Entwicklungsinstanz, echtes Objekt) | Liste mobil 94 / A11y 98–100 / BP 96 / SEO 91, LCP 2,7 s, CLS 0 (vorher 0,284); Desktop 99, CLS 0. Detail mobil 91 / 100 / 96 / 100, LCP 3,2 s, CLS 0; Desktop 99, LCP 0,7 s. A11y 98 nur mit Standard `heading="h3"` direkt unter der H1 (`heading-order`), mit `heading="h2"` 100 |
+
+**Performance (500 synthetische Objekte):** DB je Abfrage 0,5–6 ms (Liste/Filter/Pagination/Optionen, alle `type=ref`); Voll-Sync 0,9–2,5 s, inkrementell ohne Änderungen 30–70 ms; Seitenzeiten auf dem PHP-Built-in-Server 0,5–1,5 s, gleichauf mit einer WordPress-Referenzseite (Plugin-Anteil im Bereich weniger Millisekunden; Server single-threaded ohne OPcache, nicht repräsentativ). Asset-Größen (roh/gzip): `psl-tracking.js` 8,0/3,2 KB, `psl-gallery.js` 5,7/1,9 KB, `psl-lead-event.js` 3,9/1,7 KB, `psl-list.js` 2,0/1,1 KB, `psl-detail.css` 11,8/3,1 KB, `psl-list.css` 6,4/1,6 KB. 0 Propstack-Requests in allen Frontend-Tests (HTTP-Spy).
+
+**Befunde (behoben):** Liste mobil CLS 0,284 (Panel-Einklappen nach Rendern), CLS 0,10 mit Twenty Twenty-Four (Webfont-abhängiger Umbruch), Page-Cache beim ersten Speichern nicht geleert, `WP_Query::$is_front_page`; Test-Annahmen über die Testinstanz.
+
+**Testumgebungs-Hinweise:** Frische Instanzen brauchen eine WordPress-Seite `/immobilien/` (wie die Live-Site) für die HTTP-Tests. Mehrere Testläufe dürfen nie gleichzeitig dieselbe Datenbank nutzen (Tests leeren `psl_properties`); beim Abbruch eines Laufs auch Kindprozesse beenden.
+
+**Nicht durchgeführt:** Staging (Avada, echtes SEO-Plugin, Cache/Hosting, Apache/nginx), echtes Mobilgerät, reales Consent-Tool/GTM, Propstack-E2E (BLOCKED), Einsicht in den GitHub-Actions-Lauf (kein `gh`/Token lokal).
+
 ## Ergebnisse Phase 7 (2026-10-07, 0.6.0)
 
 - JavaScript: 20 Tests – grün (neu `list.test.cjs`: 3).

@@ -2,7 +2,9 @@
 
 namespace PropstackLite\Tests\Http;
 
+use PropstackLite\Admin\Diagnostics;
 use PropstackLite\Admin\Notices;
+use PropstackLite\Admin\SettingsPage;
 use PropstackLite\Plugin;
 use PropstackLite\Seo\SeoPlugins;
 
@@ -47,14 +49,31 @@ final class SeoConflictTest extends SeoHttpTestCase {
 		$this->assertNotEmpty( $admins, 'Testinstanz benötigt einen Administrator' );
 		$previous = get_current_user_id();
 		wp_set_current_user( (int) $admins[0] );
-		try {
+		require_once ABSPATH . 'wp-admin/includes/class-wp-screen.php';
+		require_once ABSPATH . 'wp-admin/includes/screen.php';
+		$notices = new Notices( new Diagnostics( Plugin::instance()->settings() ) );
+		$render  = static function ( string $screen ) use ( $notices ): string {
+			set_current_screen( $screen );
 			ob_start();
-			( new Notices( Plugin::instance()->settings() ) )->render();
-			$html = (string) ob_get_clean();
+			try {
+				$notices->render();
+			} finally {
+				$out = (string) ob_get_clean();
+			}
+			return $out;
+		};
+		try {
+			$settingsPage = $render( 'settings_page_' . SettingsPage::SLUG );
+			$pluginsPage  = $render( 'plugins' );
+			$dashboard    = $render( 'dashboard' );
 		} finally {
 			wp_set_current_user( $previous );
+			$GLOBALS['current_screen'] = null;
 		}
-		$this->assertStringContainsString( 'Mehrere SEO-Plugins aktiv. Für Propstack-Detailseiten wird nur Yoast SEO integriert.', $html );
+		$this->assertStringContainsString( 'Mehrere SEO-Plugins aktiv. Integriert wird nur Yoast SEO.', $settingsPage );
+		$this->assertStringContainsString( 'seo_plugin_conflict', $settingsPage );
+		$this->assertStringNotContainsString( 'seo_plugin_conflict', $pluginsPage, 'Plugins-Seite nur kritische Hinweise' );
+		$this->assertSame( '', $dashboard, 'keine Hinweise auf dem Dashboard' );
 	}
 
 	/** Sicherheitsnetz: Jede Robots-Angabe (auch des nicht integrierten Plugins) sagt noindex. */

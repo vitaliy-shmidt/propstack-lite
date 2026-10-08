@@ -33,9 +33,15 @@ final class SyncState {
 	public function recordError( SyncResult $result, string $at ): void {
 		$state                  = $this->get();
 		$state['last_error_at'] = $at;
-		$state['last_error']    = mb_substr( $result->type . ': ' . $result->message, 0, 300 );
+		$state['last_error']      = mb_substr( $result->type . ': ' . $result->message, 0, 300 );
+		$state['last_error_code'] = $result->code;
 		$state['last_result']   = $result->toArray();
 		update_option( self::OPTION, $state, false );
+	}
+
+	/** Stabiler Fehlercode des letzten fehlgeschlagenen Laufs (siehe Support\ErrorCode) oder ''. */
+	public function lastErrorCode(): string {
+		return $this->hasUnresolvedError() ? (string) ( $this->get()['last_error_code'] ?? '' ) : '';
 	}
 
 	/** War der letzte (nicht durch Lock übersprungene) Lauf erfolglos? */

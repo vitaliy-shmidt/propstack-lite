@@ -1,0 +1,24 @@
+# Statische Analyse (Phase 8). Aufruf: composer analyse
+# Drittanbieter-APIs (Contact Form 7, Yoast, Rank Math, WP-CLI) haben keine Stubs; Aufrufe darauf sind
+# per class_exists()/defined() abgesichert und werden durch HTTP-Tests gegen die echten Plugins geprüft.
+parameters:
+    level: 5
+    paths:
+        - src
+        - bin
+    excludePaths:
+        # implementieren Interfaces von Yoast/Rank Math (ohne Stubs); per HTTP-Test gegen die echten Plugins geprüft
+        - src/Seo/Sitemap/YoastSitemapProvider.php
+        - src/Seo/Sitemap/RankMathSitemapProvider.php
+    scanFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            message: '#(WPCF7|WPSEO|RankMath|WP_CLI|wpcf7_)#'
+        -
+            identifier: nullsafe.neverNull
+        -
+            identifier: requireOnce.fileNotFound

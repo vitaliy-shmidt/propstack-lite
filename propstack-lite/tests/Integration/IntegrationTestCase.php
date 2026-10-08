@@ -44,6 +44,11 @@ abstract class IntegrationTestCase extends TestCase {
 
 	protected function settings( array $values ): Settings {
 		$settings = Plugin::instance()->settings();
+		// Seit 0.9.0 synchronisiert das Plugin ohne API-Key nicht (api_key_missing). Tests laufen mit simuliertem
+		// Propstack – auf Instanzen ohne PSL_API_KEY (z. B. frisch aus dem Release-ZIP) daher einen Dummy-Key setzen.
+		if ( ! $settings->hasApiKey() && ! array_key_exists( 'api_key', $values ) ) {
+			$values['api_key'] = 'psl-test-dummy-key';
+		}
 		$settings->update( $values );
 		return $settings;
 	}

@@ -153,6 +153,8 @@ Filter: `psl_consent_providers`, `psl_datalayer_name` (Standard `dataLayer`), `p
 
 ## Staging-Konfiguration (Picaflor)
 
+> Phase 8: Ist Tracking aktiviert, aber kein Consent-Provider gewählt, meldet die Diagnose `consent_provider_missing` (es wird dann nichts erfasst). Staging-Test mit realem Consent-Tool/GTM: **NOT TESTED** (kein Consent-Tool festgelegt).
+
 1. Consent-Tool der Website festlegen und für „Propstack Attribution“ (Kategorie Marketing) die JS-API anbinden (siehe Beispiele) – erst danach Provider `js_api` wählen.
 2. Attribution und dataLayer-Event aktivieren.
 3. Im GTM den Trigger `property_lead` anlegen (Plugin lädt GTM nicht).

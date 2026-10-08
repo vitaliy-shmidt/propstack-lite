@@ -8,7 +8,9 @@ use PropstackLite\Mapping\MappingException;
 use PropstackLite\Mapping\PropertyMapper;
 use PropstackLite\Settings;
 use PropstackLite\Storage\PropertyStore;
+use PropstackLite\Storage\Schema;
 use PropstackLite\Support\Clock;
+use PropstackLite\Support\ErrorCode;
 use PropstackLite\Support\Logger;
 
 /**
@@ -30,6 +32,8 @@ final class SyncService {
 	public const INCREMENTAL_OVERLAP = 'PT24H';
 	public const RECONCILE_CHUNK     = 100;
 
+	private int $applied = 0;
+
 	public function __construct(
 		private UnitsEndpoint $units,
 		private PropertyMapper $mapper,
@@ -46,6 +50,7 @@ final class SyncService {
 			'full',
 			function ( SyncResult $result, StateResolver $resolver, string $now ): void {
 				$list = $this->units->listAll( [ 'status' => $this->settings->publicStatusIds() ] );
+				$this->lock->refresh();
 				if ( ! $list['complete'] ) {
 					throw new ApiException( 'Objektliste unvollständig geladen (Pagination). Bestand bleibt unverändert.', ApiException::INVALID_RESPONSE );
 				}
@@ -81,6 +86,7 @@ final class SyncService {
 					->format( 'Y-m-d\TH:i:s\Z' );
 
 				$list = $this->units->listAll( [ 'updated_at_from' => $from, 'archived' => -1 ] );
+				$this->lock->refresh();
 				if ( ! $list['complete'] ) {
 					throw new ApiException( 'Änderungsliste unvollständig geladen. Bestand bleibt unverändert.', ApiException::INVALID_RESPONSE );
 				}
@@ -119,16 +125,26 @@ final class SyncService {
 		$now     = $this->clock->mysql();
 
 		$public = $this->settings->publicStatusIds();
-		if ( [] === $public ) {
+		$skip   = match ( true ) {
+			Schema::isNewerThanCode()          => ErrorCode::SCHEMA_NEWER, // nie in ein unbekanntes Schema schreiben
+			! $this->settings->hasApiKey()     => ErrorCode::API_KEY_MISSING,
+			[] === $public                     => ErrorCode::NO_PUBLIC_STATUS,
+			default                            => null,
+		};
+		if ( null !== $skip ) {
 			$result->status  = SyncResult::SKIPPED;
-			$result->message = 'Keine öffentlichen Propstack-Status konfiguriert – Bestand bleibt unverändert.';
+			$result->code    = $skip;
+			$result->message = ErrorCode::label( $skip ) . ' Bestand bleibt unverändert.';
 			$this->state->recordError( $result, $now );
+			$this->logger->warning( $result->summary(), [ 'code' => $skip ] );
 			return $result;
 		}
 
 		if ( ! $this->lock->acquire() ) {
 			$result->status  = SyncResult::LOCKED;
-			$result->message = 'Ein anderer Sync-Lauf ist aktiv.';
+			$result->code    = ErrorCode::SYNC_LOCKED;
+			$result->message = ErrorCode::label( ErrorCode::SYNC_LOCKED );
+			$this->logger->info( $result->summary(), [ 'code' => ErrorCode::SYNC_LOCKED ] );
 			return $result;
 		}
 
@@ -146,10 +162,10 @@ final class SyncService {
 			$this->logger->info( $result->summary() );
 			do_action( 'psl_sync_finished', $result ); // z. B. Sitemap-Caches der SEO-Plugins invalidieren
 		} catch ( ApiException $e ) {
-			$this->fail( $result, $e->getMessage(), $started, $now );
+			$this->fail( $result, ErrorCode::fromApiException( $e ), $e->getMessage(), $started, $now );
 		} catch ( \Throwable $e ) {
 			// Unerwartete Fehler: nur Klasse + Meldung, keine Rohdaten.
-			$this->fail( $result, get_class( $e ) . ': ' . $e->getMessage(), $started, $now );
+			$this->fail( $result, ErrorCode::SYNC_FAILED, get_class( $e ) . ': ' . $e->getMessage(), $started, $now );
 		} finally {
 			$this->lock->release();
 		}
@@ -157,15 +173,19 @@ final class SyncService {
 		return $result;
 	}
 
-	private function fail( SyncResult $result, string $message, float $started, string $now ): void {
+	private function fail( SyncResult $result, string $code, string $message, float $started, string $now ): void {
 		$result->status     = SyncResult::ERROR;
+		$result->code       = $code;
 		$result->message    = mb_substr( $message, 0, 300 );
 		$result->durationMs = (int) round( ( microtime( true ) - $started ) * 1000 );
 		$this->state->recordError( $result, $now );
-		$this->logger->error( $result->summary() );
+		$this->logger->error( $result->summary(), [ 'code' => $code ] );
 	}
 
 	private function apply( array $raw, StateResolver $resolver, SyncResult $result, string $now ): void {
+		if ( 0 === ( ++$this->applied % 25 ) ) {
+			$this->lock->refresh(); // lange Läufe: Lock verlängern, damit kein zweiter Lauf startet
+		}
 		$id = PropertyMapper::idOf( $raw );
 		if ( null === $id ) {
 			$result->add( 'invalid' );

@@ -263,7 +263,7 @@ final class ListShortcode {
 	/**
 	 * Auswahlfeld; entfällt, wenn weniger als $minChoices echte Optionen existieren (z. B. nur ein Ort).
 	 *
-	 * @param array<string, string> $options
+	 * @param array<int|string, string> $options Wert => Bezeichnung (numerische Werte werden zu int-Schlüsseln)
 	 */
 	private function select( string $id, string $name, string $label, array $options, ListingRequest $request, int $minChoices ): ?array {
 		$value = $request->value( $name );

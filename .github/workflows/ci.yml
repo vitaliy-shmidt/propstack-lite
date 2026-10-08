@@ -1,0 +1,72 @@
+name: CI
+
+# Ohne Secrets: Syntax, Unit-Tests (ohne WordPress), JS-Tests, Release-Build und Guard für zu altes PHP.
+# Integrations-/HTTP-Tests brauchen eine WordPress-Wegwerfinstanz und laufen lokal (docs/testing.md).
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: propstack-lite
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '8.1', '8.2', '8.3' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, zip
+          coverage: none
+      - name: Composer (nur Dev-Abhängigkeiten für Tests)
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: PHP-Syntax
+        run: find propstack-lite.php uninstall.php bin src templates tests -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+      - name: Unit-Tests
+        run: vendor/bin/phpunit --testsuite unit
+      - name: Statische Analyse (PHPStan Level 5)
+        if: matrix.php == '8.3'
+        run: composer analyse -- --no-progress
+      - name: Guard (simuliertes zu altes WordPress)
+        run: php tests/compat/requirements-guard.php
+      - name: Release-Build (zweimal, reproduzierbar)
+        run: |
+          php bin/build-release.php --out=/tmp/b1
+          php bin/build-release.php --out=/tmp/b2
+          cmp /tmp/b1/*.zip /tmp/b2/*.zip
+          cat /tmp/b1/*.sha256
+
+  old-php:
+    name: Guard unter PHP 7.4 (kein Fatal Error)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+      - run: php -l propstack-lite.php && php -l uninstall.php
+      - run: php tests/compat/requirements-guard.php
+
+  js:
+    name: JavaScript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --test tests/js/tracking.test.cjs tests/js/list.test.cjs
+      - run: node --check assets/js/psl-tracking.js && node --check assets/js/psl-lead-event.js && node --check assets/js/psl-gallery.js && node --check assets/js/psl-list.js

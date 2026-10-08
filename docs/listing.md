@@ -117,8 +117,8 @@ Whitelist `PropertySearchCriteria::SORTS` (Spalten sind feste Literale, nie aus 
 - Nach Reload/Zurück zeigt das Formular die validierten Werte aus der URL.
 - Trefferanzahl: „24 Immobilien gefunden“ / „1 Immobilie gefunden“, mit Filtern „24 Immobilien entsprechen Ihren Filtern.“; bei mehreren Seiten zusätzlich „Seite 2 von 3“.
 - Leerzustand: „Für diese Filter wurden keine Immobilien gefunden.“ + „Filter zurücksetzen“. Ganz ohne öffentliche Objekte (und ohne Filter) wie bisher nur „Derzeit sind keine passenden Immobilien verfügbar.“ Kein API-Fallback.
-- **Mobil:** Die Filter liegen in `<details open>` mit `<summary>Filter (n aktiv)</summary>` – nativ per Tastatur/Screenreader bedienbar. Ohne JavaScript immer geöffnet; `psl-list.js` klappt es unter 768 px ohne aktive Filter ein.
-- **`assets/js/psl-list.js`** (Progressive Enhancement, ~2 KB, `defer`, nur mit Formular geladen): sendet leere und Standardwerte nicht mit (kurze URLs; ohne JS enthält die URL leere Parameter, die der Server ignoriert), klappt das Panel mobil ein. **Kein Auto-Submit** bei Auswahländerung (WCAG 3.2.2 „Bei Eingabe“), keine Requests, keine Speicherung.
+- **Mobil:** Die Filter liegen in `<details open>` mit `<summary>Filter (n aktiv)</summary>` – nativ per Tastatur/Screenreader bedienbar. Ohne JavaScript immer geöffnet; ein Inline-Skript direkt nach dem Panel klappt es unter 768 px ohne aktive Filter **vor dem ersten Rendern** ein (seit 0.9.0; vorher in `psl-list.js` per `defer` → Layout-Sprung, Lighthouse mobil CLS 0,284; jetzt CLS 0). Ausgabe über `wp_print_inline_script_tag()` (CSP-Nonce-Filter von WordPress greifen).
+- **`assets/js/psl-list.js`** (Progressive Enhancement, 2,0 KB / 1,1 KB gzip, `defer`, nur mit Formular geladen): sendet leere und Standardwerte nicht mit (kurze URLs; ohne JS enthält die URL leere Parameter, die der Server ignoriert). **Kein Auto-Submit** bei Auswahländerung (WCAG 3.2.2 „Bei Eingabe“), keine Requests, keine Speicherung.
 
 ## Karten
 
@@ -150,7 +150,7 @@ Whitelist `PropertySearchCriteria::SORTS` (Spalten sind feste Literale, nie aus 
 - Ausgeblendete Teile werden nicht aus der URL übernommen (z. B. `show_filters="0"` → `?city=` wirkungslos).
 - Es gibt kein `status`-Attribut und keinen Parameter, der nicht-öffentliche, verkaufte oder entfernte Objekte freischaltet. Unsichere Query-Passthroughs der 0.2.x-Zeit bleiben entfernt.
 - Mehrere interaktive Listen auf einer Seite teilen sich dieselben URL-Parameter – pro Seite nur eine interaktive Liste einsetzen.
-- **Hinweis Live-Site:** Bestehende Einbindungen werden mit 0.6.0 automatisch interaktiv. Teaser-Einbindungen außerhalb von `/immobilien/` auf `show_filters="0" show_sort="0" pagination="0"` umstellen; auf `/immobilien/` ein sehr hohes `per` (Behelf vor Phase 7) wieder auf 12 setzen.
+- **Hinweis Live-Site:** Bestehende Einbindungen werden ab 0.6.0 automatisch interaktiv – Anpassungstabelle in [release-1.0.md](release-1.0.md#sichtbare-änderung-seit-060--shortcode-anpassung-beim-live-update). Teaser-Einbindungen außerhalb von `/immobilien/` auf `show_filters="0" show_sort="0" pagination="0"` umstellen; auf `/immobilien/` ein sehr hohes `per` (Behelf vor Phase 7) wieder auf 12 setzen.
 
 ## SEO-Verhalten
 

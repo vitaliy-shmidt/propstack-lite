@@ -1,6 +1,6 @@
 # Architektur
 
-Stand: nach Phase 7 (Plugin-Version 0.6.0). Geplante Teile sind als **Geplant** markiert.
+Stand: nach Phase 8 (Plugin-Version 0.9.0, Release Candidate). Geplante Teile sind als **Geplant** markiert.
 
 ## Grundprinzipien
 
@@ -44,7 +44,7 @@ Besucher ─► psl-tracking.js (Consent, Attribution-Cookie) ─► psl-lead-ev
 
 | Klasse | Verantwortung |
 |---|---|
-| `propstack-lite.php` | Plugin-Header, Konstanten (`PSL_VERSION`, `PSL_DIR`, `PSL_URL`), PSR-4-Autoloader, Aktivierung/Deaktivierung |
+| `propstack-lite.php` | Plugin-Header, Konstanten (`PSL_VERSION` = einzige Versionsquelle, `PSL_MIN_PHP`, `PSL_MIN_WP`, `PSL_DIR`, `PSL_URL`), **Voraussetzungs-Guard** (PHP-7-kompatible Syntax; bei zu altem PHP/WordPress kein Laden von `src/`, Aktivierung abgebrochen, Admin-Hinweis, leerer Shortcode), PSR-4-Autoloader, Aktivierung/Deaktivierung |
 | `Plugin` | Verdrahtung, Hook-Registrierung, lazy erzeugte Dienste, Rewrite-Lifecycle bei (De-)Aktivierung |
 | `Settings` | Option `propstack_lite_settings`, API-Key (Konstante `PSL_API_KEY` hat Vorrang), Sanitizing, Migration aus 0.2.x |
 | `Api\Client` | einziger HTTP-Zugang; Header-Auth; Retry bei Netzwerk/429/5xx; `ApiException` mit Kategorie |
@@ -79,10 +79,13 @@ Besucher ─► psl-tracking.js (Consent, Attribution-Cookie) ─► psl-lead-ev
 | `Seo\ListingSeoData` | Canonical/Robots/Seitenzusatz der Übersicht (aus `SeoService::forListing()`) |
 | `assets/js/psl-list.js` | optionales Progressive Enhancement der Suche (kurze URLs, mobiles Einklappen) |
 | `Theme\AvadaAdapter` | optional, nur bei aktivem Avada; markiert Seite/Wrapper (**nicht verifiziert**) |
-| `Admin\SettingsPage`, `Admin\Notices` | Einstellungen, Sync-/Lead-/SEO-Status, „Jetzt synchronisieren“, Hinweise (u. a. „Mehrere SEO-Plugins aktiv“) |
+| `Admin\SettingsPage`, `Admin\Notices` | Einstellungen, Sync-/Lead-/SEO-Status, Diagnose-Box, „Jetzt synchronisieren“; Hinweise nur auf Plugins-Seite (kritisch) und Einstellungsseite (alle) |
+| `Admin\Diagnostics`, `Admin\SiteHealth` | Phase 8: Fakten + Bewertung mit stabilen Codes (gemeinsam für Site Health, Hinweise, Statusseite, `wp psl doctor`); 5 Site-Health-Tests + Debug-Info |
+| `Support\ErrorCode` | stabile Fehler-/Diagnosecodes mit deutschen Texten ([operations.md](operations.md#fehler--und-diagnosecodes)) |
+| `bin/build-release.php` | reproduzierbarer Release-Build mit Versions-/Inhaltsprüfung (nicht im Paket) |
 | `Rest\WebhookController` | `POST /wp-json/propstack/v1/webhook` → plant Sync (kein Sync im Request) |
-| `Cli\Command` | `wp psl sync|status|statuses|audit` |
-| `Support\Slugger`, `Logger`, `Clock` | Slugs, Logging ohne PII, testbare Zeit |
+| `Cli\Command` | `wp psl sync|status|statuses|audit|doctor` |
+| `Support\Slugger`, `Logger`, `Clock` | Slugs, Logging ohne PII (error/warning immer, info nur mit `WP_DEBUG`, Codes), testbare Zeit |
 | `Tracking\TrackingIntegration`, `Attribution`, `Touch`, `AttributionStorage`, `LeadEvent`, `Consent\*` | Phase 6: Skripte, Hidden Field, Attribution für Propstack, Event-Daten; Consent-Provider-Registry ([tracking.md](tracking.md)) |
 | `assets/js/psl-tracking.js`, `psl-lead-event.js` | Consent/Attribution seitenweit; Formular-Übergabe und `property_lead` nur auf Detailseiten mit Formular |
 | `Support\PageCachePurger` | leert Full-Page-Caches (WP Super Cache, W3TC, WP Rocket, LiteSpeed, WP Fastest Cache, SiteGround; Action `psl_purge_page_cache`) nach Sync mit Bestandsänderungen und nach Einstellungsänderungen |
@@ -101,8 +104,8 @@ Besucher ─► psl-tracking.js (Consent, Attribution-Cookie) ─► psl-lead-ev
 
 ## Abhängigkeiten
 
-- Laufzeit: WordPress ≥ 6.0, PHP ≥ 8.1. **Keine** Composer-Laufzeitabhängigkeiten (eigener Autoloader).
-- Dev: PHPUnit 10, `php-stubs/wordpress-stubs` (siehe `composer.json`). `vendor/` wird nicht ausgeliefert.
+- Laufzeit: WordPress ≥ 6.4, PHP ≥ 8.1 (getestet: WordPress 6.4.5 und 7.1.2; PHP 8.1, 8.2, 8.3). **Keine** Composer-Laufzeitabhängigkeiten (eigener Autoloader).
+- Dev: PHPUnit 10, PHPStan 2 (Level 5), `php-stubs/wordpress-stubs` (siehe `composer.json`). `vendor/` wird nicht ausgeliefert.
 
 ## Lead-Architektur – implementiert (Phase 4)
 
@@ -129,6 +132,10 @@ Attribution ausschließlich clientseitig im First-Party-Cookie (`psl-tracking.js
 ## Such-Architektur – implementiert (Phase 7)
 
 Filter, Sortierung und Pagination ausschließlich serverseitig über GET-Parameter auf `{prefix}psl_properties` (keine API, kein JavaScript nötig). `ListingRequest` whitelistet und normalisiert die URL, `PropertySearchCriteria` erzwingt Wertebereiche, `SearchQueryBuilder` erzeugt nur Platzhalter-SQL mit fester Sortier-Whitelist und stabilem Tie-Breaker `propstack_id`. Gesamtzahl per `COUNT(*)`, Seite per `LIMIT/OFFSET`; Filteroptionen per einer `GROUP BY`-Abfrage über Spalten. Preisbasis ist die Spalte `search_price` (Schema v2). SEO der Übersicht (Self-Canonical, noindex für Filter) über `SeoService::forListing()` und die bestehenden Adapter; Head und Shortcode teilen sich die Abfrage über `ListingService`. Details: [listing.md](listing.md).
+
+## Betrieb – implementiert (Phase 8)
+
+Voraussetzungen werden geprüft, bevor Klassen geladen werden (Guard im Bootstrap). Sync-Läufe tragen stabile Codes (`SyncResult::$code`, `last_error_code` im Sync-Status), überspringen bei fehlendem Key, fehlenden öffentlichen Status oder neuerer Schema-Version und verlängern ihren Lock bei langen Läufen. `Admin\Diagnostics` bewertet den Zustand einmal für alle Oberflächen. Release über `bin/build-release.php`; CI (`.github/workflows/ci.yml`): Syntax, Unit-Tests PHP 8.1–8.3, PHPStan, Guard unter PHP 7.4, Build-Reproduzierbarkeit, JS. Details: [operations.md](operations.md), [release-1.0.md](release-1.0.md).
 
 ## Theme-Integration
 

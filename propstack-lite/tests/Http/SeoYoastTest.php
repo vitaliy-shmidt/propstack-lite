@@ -41,7 +41,12 @@ final class SeoYoastTest extends SeoHttpTestCase {
 		$index = array_column( $this->sitemapUrls( $this->base . '/sitemap_index.xml' ), 'loc' );
 		$this->assertContains( $this->base . '/propstack-sitemap.xml', $index );
 		$this->assertSitemapContent( $this->sitemapUrls( $this->base . '/propstack-sitemap.xml' ) );
-		$this->assertSame( 404, $this->get( $this->base . '/wp-sitemap.xml' )['status'], 'Core-Sitemaps sind unter Yoast deaktiviert' );
+		// Core-Sitemaps unter Yoast deaktiviert: je nach Yoast-Zustand 404 oder 301 auf Yoasts eigenen Index.
+		$core = $this->get( $this->base . '/wp-sitemap.xml' );
+		$this->assertContains( $core['status'], [ 301, 404 ], 'Core-Sitemaps sind unter Yoast deaktiviert' );
+		if ( 301 === $core['status'] ) {
+			$this->assertStringEndsWith( '/sitemap_index.xml', $core['headers']['location'] ?? '', 'Weiterleitung nur auf Yoasts Sitemap-Index' );
+		}
 	}
 
 	public function test_yoast_sitemap_pagination(): void {

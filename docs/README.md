@@ -11,7 +11,7 @@
 | Release-Candidate-Abnahme | abgeschlossen (2026-10-06), **PASS WITH OPEN ITEMS** – [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md) |
 | Phase 6 – Tracking | abgeschlossen (2026-10-06), Standard aus; Staging-Smoke-Test und reales Consent-Tool offen |
 | Phase 7 – Filter/UX | abgeschlossen (2026-10-07), Version 0.6.0 – [listing.md](listing.md) |
-| Phase 8 – Hardening | geplant |
+| Phase 8 – Hardening / RC | abgeschlossen (2026-10-08), **Release Candidate 0.9.0** – [release-1.0.md](release-1.0.md); Staging-Abnahme offen |
 
 ## Projektziel
 
@@ -34,7 +34,7 @@ Besucher ──► [propstack_list] ──────────────�
 
 Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [architecture.md](architecture.md).
 
-## Aktueller Entwicklungsstand (nach Phase 7)
+## Aktueller Entwicklungsstand (nach Phase 8, Release Candidate 0.9.0)
 
 **Implementiert:**
 - API-Client (nur lesend), Whitelist-Mapper, einheitliches `Property`-Modell, Tabelle `{prefix}psl_properties`
@@ -50,6 +50,8 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 
 - **Immobiliensuche (Phase 7):** `/immobilien/` mit Filtern (Kaufen/Mieten, Objektart-Gruppen, Ort, Preis von/bis auf Kaufpreis bzw. Kaltmiete, Wohnfläche ab, Grundstücksfläche ab, Zimmer ab), Sortierung (Neueste, Preis, Wohnfläche, Zimmer, Zuletzt aktualisiert), Pagination (12/24/48, Parameter `seite`) – alles per GET-Parameter, serverseitig gewhitelistet, ohne JavaScript nutzbar; Self-Canonical, Filterseiten `noindex, follow`; Schema v2 (`search_price`) ([listing.md](listing.md)).
 
+- **Betrieb (Phase 8):** Voraussetzungs-Guard (PHP ≥ 8.1, WordPress ≥ 6.4, kein Fatal Error auf älteren Systemen), stabile Fehlercodes, Site-Health-Tests, Diagnose-Box, `wp psl doctor`, Logging ohne PII mit Stufen, Lock-Verlängerung bei langen Syncs, Downgrade-Schutz (`schema_newer`), reproduzierbarer Release-Build (`composer build`), CI (GitHub Actions), PHPStan Level 5 ([operations.md](operations.md), [release-1.0.md](release-1.0.md)).
+
 **Noch nicht implementiert:** ähnliche Immobilien, Favoriten/Merkliste, Suchaufträge, Kartensuche (nicht Teil von Phase 7).
 
 ## Dokumente
@@ -63,6 +65,8 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 | [sync.md](sync.md) | Sync-Arten, Statuslogik, Cron, CLI, Diagnose |
 | [routing-seo.md](routing-seo.md) | URLs, Rewrite-Regeln, Statusmatrix, Kanonisierung |
 | [seo.md](seo.md) | SEO: Title/Description/Robots/OG/JSON-LD, Core-/Yoast-/Rank-Math-Modus, Sitemaps |
+| [release-1.0.md](release-1.0.md) | Release Candidate: Voraussetzungen, Paket/Build, Installation, Update, Downgrade, Deinstallation, Live-Rollout, Rollback, Einschränkungen |
+| [operations.md](operations.md) | Betrieb: Diagnose, Site Health, Fehlercodes, Cron/System-Cron, Logging, Support-Checkliste |
 | [listing.md](listing.md) | Übersicht/Suche: URL-Parameter, Filter, Sortierung, Pagination, Shortcode, SEO, Security, Query-Architektur, Indizes, Lasttest |
 | [frontend.md](frontend.md) | Detailseite: Template-Teile, ViewModel, Formatter, Galerie/Lightbox, Bildfilter, Energie, Ansprechpartner, Hooks, Overrides |
 | [leads.md](leads.md) | Immobilienanfragen: CF7 → Propstack-Mail, Feldzuordnung, Mailformat, Sicherheit, E2E-Anleitung |
@@ -75,6 +79,8 @@ Besucher-Requests erzeugen keine Propstack-Requests (nachgewiesen). Details: [ar
 | [decisions/](decisions/) | Architekturentscheidungen (ADRs) |
 
 ## Bekannte offene Punkte
+
+Vor 1.0.0 (Details und Priorität: [release-1.0.md](release-1.0.md#bekannte-einschränkungen) und Changelog 0.9.0): Staging-Abnahme mit Avada, echtem SEO-Plugin, Cache/Hosting (Apache/nginx), echtem Mobilgerät; Consent-Tool; Propstack-E2E (BLOCKED).
 
 Vollständige Liste vor Staging/Produktion: [acceptance-rc-2026-10-06.md](acceptance-rc-2026-10-06.md).
 

@@ -8,6 +8,7 @@
     },
     "require-dev": {
         "php-stubs/wordpress-stubs": "^6.6",
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^10.5"
     },
     "autoload": {
@@ -22,7 +23,10 @@
     },
     "scripts": {
         "test": "phpunit --testsuite unit",
-        "test:integration": "phpunit --testsuite integration"
+        "test:integration": "phpunit --testsuite integration",
+        "build": "@php bin/build-release.php",
+        "test:js": "node --test tests/js/tracking.test.cjs tests/js/list.test.cjs",
+        "analyse": "phpstan analyse --memory-limit=1G"
     },
     "config": {
         "sort-packages": true,

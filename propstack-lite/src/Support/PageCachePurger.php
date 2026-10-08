@@ -22,6 +22,7 @@ final class PageCachePurger {
 	public function register(): void {
 		add_action( 'psl_sync_finished', [ $this, 'afterSync' ] );
 		add_action( 'update_option_' . Settings::OPTION, [ self::class, 'purge' ] );
+		add_action( 'add_option_' . Settings::OPTION, [ self::class, 'purge' ] ); // erstes Speichern einer Neuinstallation
 	}
 
 	public function afterSync( mixed $result ): void {

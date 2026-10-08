@@ -21,3 +21,6 @@ Thumbs.db
 *.code-workspace
 .vscode/
 .idea/
+
+# Release-Build (bin/build-release.php)
+propstack-lite/dist/

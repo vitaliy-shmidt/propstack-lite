@@ -2,7 +2,9 @@
 
 namespace PropstackLite;
 
+use PropstackLite\Admin\Diagnostics;
 use PropstackLite\Admin\Notices;
+use PropstackLite\Admin\SiteHealth;
 use PropstackLite\Admin\SettingsPage;
 use PropstackLite\Api\Client;
 use PropstackLite\Api\UnitsEndpoint;
@@ -109,8 +111,10 @@ final class Plugin {
 		);
 
 		if ( is_admin() ) {
+			$diagnostics = new Diagnostics( $this->settings );
 			( new SettingsPage( $this->settings, $this ) )->register();
-			( new Notices( $this->settings ) )->register();
+			( new Notices( $diagnostics ) )->register();
+			( new SiteHealth( $diagnostics ) )->register();
 		}
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {

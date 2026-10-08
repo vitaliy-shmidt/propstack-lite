@@ -44,7 +44,9 @@ final class SeoCoreTest extends SeoHttpTestCase {
 	public function test_head_is_xss_safe(): void {
 		$this->assertHeadXssSafe();
 		$head = self::head( $this->get( $this->url( self::ID_XSS ) )['body'] );
-		$this->assertSame( 'Wohnung kaufen in Ort alert(1) | ' . wp_strip_all_tags( (string) get_bloginfo( 'name' ) ), self::title( $head ), 'Markup wird zu Klartext' );
+		// Ob „2-Zimmer-“ noch in die Titellänge passt, hängt von der Länge des Seitennamens ab (Kürzungsregel).
+		$brand = wp_strip_all_tags( (string) get_bloginfo( 'name' ) );
+		$this->assertMatchesRegularExpression( '#^(2-Zimmer-)?Wohnung kaufen in Ort alert\(1\) \| ' . preg_quote( $brand, '#' ) . '$#', (string) self::title( $head ), 'Markup wird zu Klartext' );
 		$this->assertStringContainsString( '\u0022quote\u0027', $head, 'JSON-LD escaped Anführungszeichen (JSON_HEX_QUOT/APOS)' );
 	}
 

@@ -1,6 +1,7 @@
 # Frontend: Detailseite, Templates, Galerie
 
 > Übersicht/Suche (`[propstack_list]`, Filterformular, Karten, Pagination, `psl-list.css`/`psl-list.js`): [listing.md](listing.md).
+> Lighthouse 12 (Phase 8, Edge, Testinstanz, echtes Objekt): Detailseite mobil Performance 91, Accessibility 100, Best Practices 96, SEO 100, LCP 3,2 s, CLS 0; Desktop 99/100/96/100, LCP 0,7 s. Liste mobil 94/98–100/96/91, CLS 0 (nach Fix); Desktop 99, CLS 0. SEO 91 = fehlende Meta-Description der WordPress-Seite ohne SEO-Plugin. Testserver-TTFB 1–2 s (PHP-Built-in-Server, nicht repräsentativ).
 
 Stand: Phase 3 (2026-10-05). Alle Daten stammen aus dem lokalen `PropertyStore` – **keine API-Requests im Besucher-Request** (per HTTP-Test nachgewiesen).
 

@@ -31,6 +31,10 @@ Bewusst **nicht** umgesetzt, weil ohne reale Installation nicht prüfbar: Avada-
 - Plugin-CSS setzt keine globalen Regeln; Avadas Typografie, Farben und Buttons greifen. Die H1-Begrenzung unter 600 px (siehe [frontend.md](frontend.md)) wirkt auch unter Avada – **noch nicht gegen reale Avada-Installation verifiziert**.
 - Zu prüfen: Sticky-Kurzfaktenbox (`position: sticky; top: 24px`) in Kombination mit Avadas Sticky-Header (ggf. größerer Abstand nötig); Sprungziel `#psl-contact` unter einem fixen Header (`scroll-margin-top`).
 
+## Status Phase 8 (2026-10-08): **NOT TESTED**
+
+Kein Staging-Zugang. Nicht geprüft: Header, Footer, Content-Breite, fixierter Header mit `--psl-scroll-offset`, Galerie/Lightbox (Konflikt mit Avada-Lightbox), Filter, Sortierung, Pagination, Mobil, CF7-Darstellung, Buttons (`.psl-button` erbt Theme-Stil), Überschriftenebenen (`heading="h2"` unter der Seiten-H1). Hinweis für Builder: Liegt `[propstack_list]` in einem Avada-Code-Block mit Base64-Kodierung, erkennt die SEO-Schicht die Listenseite nur über die Übersichts-URL oder den Filter `psl_listing_page_atts` ([listing.md](listing.md#seo-verhalten)).
+
 ## Zu prüfen in der realen Testumgebung
 
 1. Rendert Avadas `header.php`/`footer.php` auf der virtuellen Route ohne `$post` korrekt (Title-Bar, Sidebar, Container-Breite, Sticky-Header)? Avada liest Seitenoptionen typischerweise aus dem aktuellen Post.

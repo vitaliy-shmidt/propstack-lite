@@ -4,8 +4,9 @@
  *
  * Überschreibbar unter {theme}/propstack-lite/parts/list-filters.php. Alle Werte sind unescaped.
  * Feldnamen müssen den Parametern aus ListingRequest::PARAMS entsprechen (Server-Whitelist).
- * Mobil: <details> ist ohne JavaScript immer geöffnet; psl-list.js klappt es auf kleinen
- * Bildschirmen ohne aktive Filter ein (natives, zugängliches Auf-/Zuklappen über <summary>).
+ * Mobil: <details> ist ohne JavaScript immer geöffnet; ein Inline-Skript direkt danach klappt es auf
+ * kleinen Bildschirmen ohne aktive Filter vor dem ersten Rendern ein (kein Layout-Sprung); Auf-/Zuklappen
+ * bleibt nativ und zugänglich über <summary>.
  *
  * @var array $vars form, id
  */
@@ -59,6 +60,11 @@ $psl_id   = $vars['id'];
 				<?php endif; ?>
 			</div>
 		</details>
+		<?php
+		// Mobil ohne aktive Filter einklappen – synchron beim Parsen (vor dem ersten Rendern), damit nichts
+		// springt (CLS). Ohne JavaScript bleibt das Panel geöffnet.
+		wp_print_inline_script_tag( "(function(d){if(d&&d.getAttribute('data-active')==='0'&&window.matchMedia&&window.matchMedia('(max-width: 767px)').matches){d.open=false;}})(document.currentScript&&document.currentScript.previousElementSibling);" );
+		?>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $psl_form['sort'] ) ) : ?>

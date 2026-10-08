@@ -144,6 +144,8 @@ Die Zuordnung beruht nie allein auf dem Hidden Field `psl_property_id`: Wert →
 
 ## Fehlerverhalten und Logging
 
+> Seit 0.9.0: Status `prepared`/`sent`/`spam` nur bei `WP_DEBUG` (INFO), `aborted` (WARNING) und `mail_failed` (ERROR) immer; Diagnose-Codes `cf7_missing`, `lead_form_missing`, `lead_target_missing` in Site Health/`wp psl doctor` ([operations.md](operations.md)). CF7 auf Staging und Propstack-E2E: **NOT TESTED / BLOCKED** (kein Zugang bzw. Voraussetzungen offen).
+
 | Code (nur Log) | Ursache | Besucher sieht |
 |---|---|---|
 | `not_configured` | Formular/Adresse/Felder unvollständig | neutrale Fehlermeldung |

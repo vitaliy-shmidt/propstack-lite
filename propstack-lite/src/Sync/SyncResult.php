@@ -18,7 +18,8 @@ final class SyncResult {
 		public readonly string $type,
 		public string $status = self::OK,
 		public string $message = '',
-		public int $durationMs = 0
+		public int $durationMs = 0,
+		public string $code = ''
 	) {
 		$this->counts = array_fill_keys( self::COUNTERS, 0 );
 	}
@@ -39,9 +40,10 @@ final class SyncResult {
 			}
 		}
 		return sprintf(
-			'%s-Sync %s (%d ms)%s%s',
+			'%s-Sync %s%s (%d ms)%s%s',
 			$this->type,
 			$this->status,
+			'' === $this->code ? '' : ' [' . $this->code . ']',
 			$this->durationMs,
 			[] === $parts ? '' : ': ' . implode( ', ', $parts ),
 			'' === $this->message ? '' : ' – ' . $this->message
@@ -53,6 +55,7 @@ final class SyncResult {
 			'type'        => $this->type,
 			'status'      => $this->status,
 			'message'     => $this->message,
+			'code'        => $this->code,
 			'duration_ms' => $this->durationMs,
 			'counts'      => $this->counts,
 		];
