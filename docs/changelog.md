@@ -31,7 +31,7 @@ Release-Notes und Rollout: [release-1.0.md](release-1.0.md). Betrieb: [operation
 
 **Release-Artefakt:** `propstack-lite-0.9.0.zip`, 185.646 Byte, SHA256 `7370ca1863312473507df9a43971bd132247ad8a4a31e8523e5f0f4f5d4b236f` (reproduzierbar).
 
-**Offene Punkte vor 1.0:** siehe Abschlussbericht/[release-1.0.md](release-1.0.md#bekannte-einschränkungen) – Staging (Avada, SEO-Plugin, Cache/Hosting, Apache/nginx, Mobilgerät), Consent-Tool, Propstack-E2E (BLOCKED), CI-Lauf auf GitHub nicht eingesehen (kein `gh`-Zugang).
+**Offene Punkte vor 1.0:** siehe Abschlussbericht/[release-1.0.md](release-1.0.md#bekannte-einschränkungen) – Staging (Avada, SEO-Plugin, Cache/Hosting, Apache/nginx, Mobilgerät), Consent-Tool, Propstack-E2E (BLOCKED). CI (GitHub Actions) für den Release-Commit: alle Jobs erfolgreich.
 
 ## 2026-10-07 – Phase 7: Immobiliensuche, Filter, Pagination, Sortierung (Version 0.6.0)
 

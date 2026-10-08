@@ -98,7 +98,9 @@ Testobjekt ist das **Release-ZIP** (`propstack-lite-0.9.0.zip`, SHA256 `7370ca18
 
 **Testumgebungs-Hinweise:** Frische Instanzen brauchen eine WordPress-Seite `/immobilien/` (wie die Live-Site) für die HTTP-Tests. Mehrere Testläufe dürfen nie gleichzeitig dieselbe Datenbank nutzen (Tests leeren `psl_properties`); beim Abbruch eines Laufs auch Kindprozesse beenden.
 
-**Nicht durchgeführt:** Staging (Avada, echtes SEO-Plugin, Cache/Hosting, Apache/nginx), echtes Mobilgerät, reales Consent-Tool/GTM, Propstack-E2E (BLOCKED), Einsicht in den GitHub-Actions-Lauf (kein `gh`/Token lokal).
+**Nicht durchgeführt:** Staging (Avada, echtes SEO-Plugin, Cache/Hosting, Apache/nginx), echtes Mobilgerät, reales Consent-Tool/GTM, Propstack-E2E (BLOCKED).
+
+**GitHub Actions** (Commit `38813e8`, Lauf 37739102772): alle Jobs erfolgreich – PHP 8.1/8.2/8.3 (Syntax, Unit, Guard, Release-Build zweimal mit Byte-Vergleich), PHPStan auf 8.3, Guard unter PHP 7.4, JavaScript.
 
 ## Ergebnisse Phase 7 (2026-10-07, 0.6.0)
 
